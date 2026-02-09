@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Voice Room</title>
+    <title>Linkice</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
     <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.11.0.js"></script>
     <style>
         :root {
-            --bg: #313338;
-            --card: #2b2d31;
-            --primary: #5865f2;
-            --success: #23a559;
-            --danger: #da373c;
-            --text: #dbdee1;
+            --primary: #6366f1;
+            --secondary: #a855f7;
+            --bg: #0f172a;
+            --card: rgba(30, 41, 59, 0.7);
+            --success: #22c55e;
+            --danger: #ef4444;
         }
 
         body {
-            font-family: 'gg sans', 'Helvetica Neue', Arial, sans-serif;
-            background-color: var(--bg);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
             color: white;
             margin: 0;
             display: flex;
@@ -28,19 +29,30 @@
         }
 
         .header {
-            padding: 20px;
+            padding: 25px;
             text-align: center;
-            border-bottom: 1px solid #26272d;
             width: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        h2 { 
+            margin: 0; 
+            font-size: 1.5rem; 
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1px;
         }
 
         #user-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 25px;
             width: 90%;
-            max-width: 600px;
-            padding: 30px;
+            max-width: 500px;
+            padding: 40px 20px;
             flex-grow: 1;
             overflow-y: auto;
         }
@@ -49,72 +61,83 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            animation: fadeIn 0.3s ease;
+            animation: slideUp 0.4s ease-out;
+        }
+
+        .avatar-container {
+            position: relative;
+            padding: 5px;
         }
 
         .avatar {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: #4e5058;
+            width: 75px;
+            height: 75px;
+            border-radius: 24px; /* Moderna zaobljena kocka */
+            background: var(--card);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 40px;
-            border: 4px solid transparent;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+            font-size: 38px;
+            border: 1px solid rgba(255,255,255,0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
 
-        /* Zeleni krug koji pulsira kada korisnik priča */
         .speaking {
             border-color: var(--success);
-            box-shadow: 0 0 15px var(--success);
-            transform: scale(1.05);
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
+            background: rgba(34, 197, 94, 0.1);
         }
 
         .username {
-            margin-top: 10px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text);
-            text-align: center;
-            max-width: 100px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            margin-top: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            color: #94a3b8;
+            background: rgba(0,0,0,0.2);
+            padding: 4px 10px;
+            border-radius: 20px;
         }
 
         .controls {
-            background: #232428;
-            padding: 25px;
+            background: rgba(15, 23, 42, 0.9);
+            padding: 30px;
             display: flex;
             justify-content: center;
-            gap: 20px;
             width: 100%;
-            box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+            border-top: 1px solid rgba(255,255,255,0.05);
         }
 
         .btn {
-            padding: 14px 30px;
-            border-radius: 8px;
+            padding: 16px 40px;
+            border-radius: 16px;
             border: none;
             font-size: 16px;
-            font-weight: bold;
+            font-weight: 700;
             cursor: pointer;
             color: white;
-            transition: 0.2s;
-            min-width: 150px;
+            transition: 0.3s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            width: 80%;
+            max-width: 300px;
         }
 
-        .join-btn { background: var(--success); }
-        .join-btn:hover { background: #1a8347; }
+        .join-btn { 
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+        }
         
-        .leave-btn { background: var(--danger); display: none; }
-        .leave-btn:hover { background: #a1282c; }
+        .join-btn:active { transform: scale(0.95); }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        .leave-btn { 
+            background: #1e293b;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: var(--danger);
+            display: none;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
     </style>
@@ -122,35 +145,29 @@
 <body>
 
     <div class="header">
-        <h2 id="room-name" style="margin:0; font-size: 1.2rem;">Glavni Kanal 🔊</h2>
-        <p id="status" style="margin:5px 0 0; font-size: 0.9rem; color: #949ba4;">Niste povezani</p>
+        <h2>LINKICE 🔗</h2>
+        <p id="status" style="margin:8px 0 0; font-size: 0.85rem; color: #64748b; font-weight: 500;">Spremni za povezivanje</p>
     </div>
 
-    <div id="user-grid">
-        </div>
+    <div id="user-grid"></div>
 
     <div class="controls">
-        <button id="join-btn" class="btn join-btn">Uđi u sobu</button>
-        <button id="leave-btn" class="btn leave-btn">Napusti</button>
+        <button id="join-btn" class="btn join-btn">Uđi u Linkice</button>
+        <button id="leave-btn" class="btn leave-btn">Napusti sobu</button>
     </div>
 
     <script>
-        // --- KONFIGURACIJA ---
-        const APP_ID = "OVDE_ZALEPI_TVOJ_APP_ID"; // Zameni sa svojim App ID-om
+        const APP_ID = "OVDE_ZALEPI_TVOJ_APP_ID"; 
         const CHANNEL = "VoiceRoom";
-        
-        // Uzimanje imena iz URL-a (?name=Marko)
         const params = new URLSearchParams(window.location.search);
         const myUsername = params.get('name') || "Gost";
 
-        // Lista životinja za random ikonicu
         const animals = ['🦁', '🦊', '🐨', '🐘', '🐯', '🐼', '🐙', '🦉', '🐸', '🦓', '🦄', '🐝'];
         const myIcon = animals[Math.floor(Math.random() * animals.length)];
 
         let client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         let localTracks = { audioTrack: null };
 
-        // Funkcija za crtanje korisnika na ekranu
         function drawUser(uid, username, icon, isMe = false) {
             if (document.getElementById(`user-${uid}`)) return;
             const grid = document.getElementById('user-grid');
@@ -158,31 +175,27 @@
             card.id = `user-${uid}`;
             card.className = 'user-card';
             card.innerHTML = `
-                <div class="avatar" id="avatar-${uid}">${icon}</div>
+                <div class="avatar-container">
+                    <div class="avatar" id="avatar-${uid}">${icon}</div>
+                </div>
                 <div class="username">${username}${isMe ? ' (Ti)' : ''}</div>
             `;
             grid.appendChild(card);
         }
 
-        // --- AGORA LOGIKA ---
-
-        // Kada neko drugi uđe
         client.on("user-published", async (user, mediaType) => {
             await client.subscribe(user, mediaType);
             if (mediaType === "audio") {
                 user.audioTrack.play();
-                // Za demo, drugima dodeljujemo fiksnu ikonu životinje
                 drawUser(user.uid, "Korisnik " + user.uid.toString().slice(-3), '👤');
             }
         });
 
-        // Kada neko izađe
         client.on("user-unpublished", (user) => {
             const el = document.getElementById(`user-${user.uid}`);
             if (el) el.remove();
         });
 
-        // Dugme JOIN
         document.getElementById('join-btn').onclick = async () => {
             try {
                 await client.join(APP_ID, CHANNEL, null, null);
@@ -193,15 +206,13 @@
                 
                 document.getElementById('join-btn').style.display = 'none';
                 document.getElementById('leave-btn').style.display = 'block';
-                document.getElementById('status').innerText = "Povezano 🎙️";
-                document.getElementById('status').style.color = "#23a559";
+                document.getElementById('status').innerText = "POVEZANO • UŽIVO";
+                document.getElementById('status').style.color = "#22c55e";
             } catch (e) {
-                console.error(e);
-                alert("Greška: Dozvolite mikrofon u browseru!");
+                alert("Proverite dozvolu za mikrofon!");
             }
         };
 
-        // Dugme LEAVE
         document.getElementById('leave-btn').onclick = async () => {
             if (localTracks.audioTrack) {
                 localTracks.audioTrack.stop();
@@ -211,7 +222,6 @@
             location.reload(); 
         };
 
-        // Detekcija govora (Visualizer)
         client.enableAudioVolumeIndicator();
         client.on("volume-indicator", (volumes) => {
             volumes.forEach((volume) => {
