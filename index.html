@@ -143,6 +143,18 @@
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+
+            @keyframes pulse-green {
+        0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+        70% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
+        100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        }
+
+        .speaking {
+            border-color: var(--success) !important;
+            animation: pulse-green 1.5s infinite;
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body>
@@ -160,6 +172,7 @@
     </div>
 
     <script>
+        let userNames = {};
         const APP_ID = "beb2d2e844954540847d8bf07648926e"; 
         const CHANNEL = "Linkice";
         const params = new URLSearchParams(window.location.search);
@@ -172,7 +185,14 @@
         let localTracks = { audioTrack: null };
 
         function drawUser(uid, username, icon, isMe = false) {
-            if (document.getElementById(`user-${uid}`)) return;
+            if (document.getElementById(`user-${uid}`)) {
+                if (username !== "Korisnik...") {
+                    const nameTag = document.querySelector(`#user-${uid} .username`);
+                    if (nameTag) nameTag.innerText = username + (isMe ? ' (Ti)' : '');
+                }
+                return;
+            }
+            
             const grid = document.getElementById('user-grid');
             const card = document.createElement('div');
             card.id = `user-${uid}`;
@@ -181,7 +201,7 @@
                 <div class="avatar-container">
                     <div class="avatar" id="avatar-${uid}">${icon}</div>
                 </div>
-                <div class="username">${username}${isMe ? ' (Ti)' : ' '}</div>
+                <div class="username">${username}${isMe ? ' (Ti)' : ''}</div>
             `;
             grid.appendChild(card);
         }
@@ -190,7 +210,7 @@
             await client.subscribe(user, mediaType);
             if (mediaType === "audio") {
                 user.audioTrack.play();
-                drawUser(user.uid, "Korisnik " + user.uid.toString().slice(-3), '👤');
+                drawUser(user.uid, user.uid, '👤'); 
             }
         });
 
@@ -199,9 +219,16 @@
             if (el) el.remove();
         });
 
+        client.on("user-joined", (user) => {
+            drawUser(user.uid, user.uid, '👤');
+        });
+
         document.getElementById('join-btn').onclick = async () => {
             try {
-                await client.join(APP_ID, CHANNEL, null, null);
+                await client.join(APP_ID, CHANNEL, null, myUsername);
+                client.remoteUsers.forEach(user => {
+                    drawUser(user.uid, user.uid, '👤');
+                });
                 localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
                 await client.publish(localTracks.audioTrack);
 
@@ -227,11 +254,14 @@
 
         client.enableAudioVolumeIndicator();
         client.on("volume-indicator", (volumes) => {
+            document.querySelectorAll('.avatar').forEach(av => av.classList.remove('speaking'));
+
             volumes.forEach((volume) => {
-                const avatar = document.getElementById(`avatar-${volume.uid}`);
-                if (avatar) {
-                    if (volume.level > 5) avatar.classList.add('speaking');
-                    else avatar.classList.remove('speaking');
+                const actualUid = volume.uid === 0 ? client.uid : volume.uid;
+                const avatar = document.getElementById(`avatar-${actualUid}`);
+                
+                if (avatar && volume.level > 5) { 
+                    avatar.classList.add('speaking');
                 }
             });
         });
