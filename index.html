@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Voice Room</title>
+    <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.11.0.js"></script>
+    <style>
+        :root {
+            --bg: #313338;
+            --card: #2b2d31;
+            --primary: #5865f2;
+            --success: #23a559;
+            --danger: #da373c;
+            --text: #dbdee1;
+        }
+
+        body {
+            font-family: 'gg sans', 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg);
+            color: white;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #26272d;
+            width: 100%;
+        }
+
+        #user-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 20px;
+            width: 90%;
+            max-width: 600px;
+            padding: 30px;
+            flex-grow: 1;
+            overflow-y: auto;
+        }
+
+        .user-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: #4e5058;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            border: 4px solid transparent;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        }
+
+        /* Zeleni krug koji pulsira kada korisnik priča */
+        .speaking {
+            border-color: var(--success);
+            box-shadow: 0 0 15px var(--success);
+            transform: scale(1.05);
+        }
+
+        .username {
+            margin-top: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text);
+            text-align: center;
+            max-width: 100px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .controls {
+            background: #232428;
+            padding: 25px;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            width: 100%;
+            box-shadow: 0 -5px 15px rgba(0,0,0,0.2);
+        }
+
+        .btn {
+            padding: 14px 30px;
+            border-radius: 8px;
+            border: none;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            color: white;
+            transition: 0.2s;
+            min-width: 150px;
+        }
+
+        .join-btn { background: var(--success); }
+        .join-btn:hover { background: #1a8347; }
+        
+        .leave-btn { background: var(--danger); display: none; }
+        .leave-btn:hover { background: #a1282c; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2 id="room-name" style="margin:0; font-size: 1.2rem;">Glavni Kanal 🔊</h2>
+        <p id="status" style="margin:5px 0 0; font-size: 0.9rem; color: #949ba4;">Niste povezani</p>
+    </div>
+
+    <div id="user-grid">
+        </div>
+
+    <div class="controls">
+        <button id="join-btn" class="btn join-btn">Uđi u sobu</button>
+        <button id="leave-btn" class="btn leave-btn">Napusti</button>
+    </div>
+
+    <script>
+        // --- KONFIGURACIJA ---
+        const APP_ID = "OVDE_ZALEPI_TVOJ_APP_ID"; // Zameni sa svojim App ID-om
+        const CHANNEL = "VoiceRoom";
+        
+        // Uzimanje imena iz URL-a (?name=Marko)
+        const params = new URLSearchParams(window.location.search);
+        const myUsername = params.get('name') || "Gost";
+
+        // Lista životinja za random ikonicu
+        const animals = ['🦁', '🦊', '🐨', '🐘', '🐯', '🐼', '🐙', '🦉', '🐸', '🦓', '🦄', '🐝'];
+        const myIcon = animals[Math.floor(Math.random() * animals.length)];
+
+        let client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+        let localTracks = { audioTrack: null };
+
+        // Funkcija za crtanje korisnika na ekranu
+        function drawUser(uid, username, icon, isMe = false) {
+            if (document.getElementById(`user-${uid}`)) return;
+            const grid = document.getElementById('user-grid');
+            const card = document.createElement('div');
+            card.id = `user-${uid}`;
+            card.className = 'user-card';
+            card.innerHTML = `
+                <div class="avatar" id="avatar-${uid}">${icon}</div>
+                <div class="username">${username}${isMe ? ' (Ti)' : ''}</div>
+            `;
+            grid.appendChild(card);
+        }
+
+        // --- AGORA LOGIKA ---
+
+        // Kada neko drugi uđe
+        client.on("user-published", async (user, mediaType) => {
+            await client.subscribe(user, mediaType);
+            if (mediaType === "audio") {
+                user.audioTrack.play();
+                // Za demo, drugima dodeljujemo fiksnu ikonu životinje
+                drawUser(user.uid, "Korisnik " + user.uid.toString().slice(-3), '👤');
+            }
+        });
+
+        // Kada neko izađe
+        client.on("user-unpublished", (user) => {
+            const el = document.getElementById(`user-${user.uid}`);
+            if (el) el.remove();
+        });
+
+        // Dugme JOIN
+        document.getElementById('join-btn').onclick = async () => {
+            try {
+                await client.join(APP_ID, CHANNEL, null, null);
+                localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+                await client.publish(localTracks.audioTrack);
+
+                drawUser(client.uid, myUsername, myIcon, true);
+                
+                document.getElementById('join-btn').style.display = 'none';
+                document.getElementById('leave-btn').style.display = 'block';
+                document.getElementById('status').innerText = "Povezano 🎙️";
+                document.getElementById('status').style.color = "#23a559";
+            } catch (e) {
+                console.error(e);
+                alert("Greška: Dozvolite mikrofon u browseru!");
+            }
+        };
+
+        // Dugme LEAVE
+        document.getElementById('leave-btn').onclick = async () => {
+            if (localTracks.audioTrack) {
+                localTracks.audioTrack.stop();
+                localTracks.audioTrack.close();
+            }
+            await client.leave();
+            location.reload(); 
+        };
+
+        // Detekcija govora (Visualizer)
+        client.enableAudioVolumeIndicator();
+        client.on("volume-indicator", (volumes) => {
+            volumes.forEach((volume) => {
+                const avatar = document.getElementById(`avatar-${volume.uid}`);
+                if (avatar) {
+                    if (volume.level > 5) avatar.classList.add('speaking');
+                    else avatar.classList.remove('speaking');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
