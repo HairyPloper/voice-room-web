@@ -69,7 +69,40 @@
             overflow-y: auto;
             align-content: start; 
         }
+        .user-controls-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 75px;
+            height: 75px;
+            background: rgba(15, 23, 42, 0.9);
+            border-radius: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none; 
+            z-index: 10;
+        }
 
+        .user-card.active .user-controls-overlay {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .volume-slider {
+            width: 50px;
+            height: 4px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .mute-indicator {
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
         .user-card {
             display: flex;
             flex-direction: column;
@@ -203,7 +236,6 @@
             if (document.getElementById(`user-${uid}`)) return;
             
             const randomIcon = icon || animals[Math.floor(Math.random() * animals.length)];
-            
             const grid = document.getElementById('user-grid');
             const card = document.createElement('div');
             card.id = `user-${uid}`;
@@ -211,12 +243,21 @@
 
             if (isMe) {
                 card.setAttribute('onclick', 'window.toggleMute()');
-                card.title = "Toggle mute (click)";
+            } else {
+                card.setAttribute('onclick', `this.classList.toggle('active')`);
             }
 
             card.innerHTML = `
-                <div class="avatar-container">
+                <div class="avatar-container" style="position: relative;">
                     <div class="avatar" id="avatar-${uid}">${randomIcon}</div>
+                    
+                    ${!isMe ? `
+                    <div class="user-controls-overlay" onclick="event.stopPropagation()">
+                        <span class="mute-indicator">🔊</span>
+                        <input type="range" class="volume-slider" min="0" max="100" value="100" 
+                            oninput="window.adjustVolume('${uid}', this.value)">
+                    </div>
+                    ` : ''}
                 </div>
                 <div class="username">${username}${isMe ? ' (Ti)' : ''}</div>
             `;
@@ -298,6 +339,24 @@
                     avatar.classList.add('speaking');
                 }
             });
+        });
+
+        window.adjustVolume = function(uid, volume) {
+            const remoteUser = client.remoteUsers.find(u => u.uid == uid);
+            if (remoteUser && remoteUser.audioTrack) {
+                remoteUser.audioTrack.setVolume(parseInt(volume));
+                
+                const indicator = document.querySelector(`#user-${uid} .mute-indicator`);
+                if (indicator) {
+                    indicator.innerText = volume == 0 ? "🔇" : "🔊";
+                }
+            }
+        };
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.user-card')) {
+                document.querySelectorAll('.user-card.active').forEach(c => c.classList.remove('active'));
+            }
         });
 
         window.onbeforeunload = function() {
