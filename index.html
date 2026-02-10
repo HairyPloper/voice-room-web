@@ -15,7 +15,14 @@
             --success: #22c55e;
             --danger: #ef4444;
         }
-
+        .avatar.muted {
+            opacity: 0.5;
+            border: 3px solid var(--danger) !important;
+            filter: grayscale(1);
+        }
+        .user-card[onclick] {
+            cursor: pointer;
+        }
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
@@ -72,7 +79,7 @@
         .avatar {
             width: 75px;
             height: 75px;
-            border-radius: 24px; /* Moderna zaobljena kocka */
+            border-radius: 24px;
             background: var(--card);
             display: flex;
             align-items: center;
@@ -102,12 +109,12 @@
 
         .controls {
             background: rgba(15, 23, 42, 0.95);
-            padding: 20px 20px 40px 20px; /* Povećan donji padding za Firefox bar */
+            padding: 20px 20px 40px 20px;
             display: flex;
             justify-content: center;
             width: 100%;
             border-top: 1px solid rgba(255,255,255,0.1);
-            position: sticky; /* Drži dugme fiksirano na dnu vidljivog dela */
+            position: sticky; 
             bottom: 0;
             box-sizing: border-box;
         }
@@ -184,6 +191,21 @@
         let client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         let localTracks = { audioTrack: null };
 
+        function toggleMute() {
+            if (!localTracks.audioTrack) return;
+            isMuted = !isMuted;
+            
+            localTracks.audioTrack.setEnabled(!isMuted);
+            
+            const myAvatar = document.getElementById(`avatar-${client.uid}`);
+            if (myAvatar) {
+                myAvatar.classList.toggle('muted', isMuted);
+            }
+            
+            document.getElementById('status').innerText = isMuted ? "MUTIRAN 🔇" : "POVEZANO • UŽIVO";
+            document.getElementById('status').style.color = isMuted ? "#ef4444" : "#22c55e";
+        }
+
         function drawUser(uid, username, icon, isMe = false) {
             if (document.getElementById(`user-${uid}`)) {
                 if (username !== "Korisnik...") {
@@ -197,6 +219,12 @@
             const card = document.createElement('div');
             card.id = `user-${uid}`;
             card.className = 'user-card';
+
+            if (isMe) {
+                card.setAttribute('onclick', 'toggleMute()');
+                card.title = "Klikni da se mutiraš";
+            }
+
             card.innerHTML = `
                 <div class="avatar-container">
                     <div class="avatar" id="avatar-${uid}">${icon}</div>
