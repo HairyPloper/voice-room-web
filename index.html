@@ -15,14 +15,18 @@
             --success: #22c55e;
             --danger: #ef4444;
         }
+        
         .avatar.muted {
-            opacity: 0.5;
-            border: 3px solid var(--danger) !important;
+            opacity: 0.4;
             filter: grayscale(1);
+            border: 2px dashed rgba(255,255,255,0.3) !important;
+            transform: scale(0.95);
         }
+
         .user-card[onclick] {
             cursor: pointer;
         }
+
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
@@ -56,12 +60,14 @@
         #user-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            grid-auto-rows: min-content; 
             gap: 25px;
             width: 90%;
             max-width: 500px;
             padding: 40px 20px;
             flex-grow: 1;
             overflow-y: auto;
+            align-content: start; 
         }
 
         .user-card {
@@ -69,6 +75,8 @@
             flex-direction: column;
             align-items: center;
             animation: slideUp 0.4s ease-out;
+            height: min-content; 
+            align-self: start;
         }
 
         .avatar-container {
@@ -90,13 +98,6 @@
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
         }
 
-        .speaking {
-            border-color: var(--success);
-            transform: scale(1.1);
-            box-shadow: 0 0 20px rgba(34, 197, 94, 0.4);
-            background: rgba(34, 197, 94, 0.1);
-        }
-
         .username {
             margin-top: 12px;
             font-size: 13px;
@@ -105,6 +106,7 @@
             background: rgba(0,0,0,0.2);
             padding: 4px 10px;
             border-radius: 20px;
+            text-align: center;
         }
 
         .controls {
@@ -133,28 +135,18 @@
             max-width: 300px;
         }
 
-        .join-btn { 
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-        }
-        
-        .join-btn:active { transform: scale(0.95); }
-
-        .leave-btn { 
-            background: #1e293b;
-            border: 1px solid rgba(255,255,255,0.1);
-            color: var(--danger);
-            display: none;
-        }
+        .join-btn { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
+        .leave-btn { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: var(--danger); display: none; }
 
         @keyframes slideUp {
             from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-            @keyframes pulse-green {
-        0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-        70% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
-        100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+        @keyframes pulse-green {
+            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
 
         .speaking {
@@ -179,7 +171,6 @@
     </div>
 
     <script>
-        let userNames = {};
         const APP_ID = "beb2d2e844954540847d8bf07648926e"; 
         const CHANNEL = "Linkice";
         const params = new URLSearchParams(window.location.search);
@@ -192,29 +183,26 @@
         let localTracks = { audioTrack: null };
         let isMuted = false;
 
-        function toggleMute() {
+        window.toggleMute = async function() {
             if (!localTracks.audioTrack) return;
             isMuted = !isMuted;
             
-            localTracks.audioTrack.setEnabled(!isMuted);
+            await localTracks.audioTrack.setEnabled(!isMuted);
             
             const myAvatar = document.getElementById(`avatar-${client.uid}`);
             if (myAvatar) {
                 myAvatar.classList.toggle('muted', isMuted);
             }
             
-            document.getElementById('status').innerText = isMuted ? "Mutiran 🔇" : "Na vezi sa ekipom 🍻";
-            document.getElementById('status').style.color = isMuted ? "#ef4444" : "#22c55e";
-        }
+            const statusEl = document.getElementById('status');
+            statusEl.innerText = isMuted ? "Mutiran si 🤐" : "Na vezi 🍻";
+            statusEl.style.color = isMuted ? "#ef4444" : "#22c55e";
+        };
 
         function drawUser(uid, username, icon, isMe = false) {
-            if (document.getElementById(`user-${uid}`)) {
-                if (username !== "Korisnik...") {
-                    const nameTag = document.querySelector(`#user-${uid} .username`);
-                    if (nameTag) nameTag.innerText = username + (isMe ? ' (Ja)' : '');
-                }
-                return;
-            }
+            if (document.getElementById(`user-${uid}`)) return;
+            
+            const randomIcon = icon || animals[Math.floor(Math.random() * animals.length)];
             
             const grid = document.getElementById('user-grid');
             const card = document.createElement('div');
@@ -222,13 +210,13 @@
             card.className = 'user-card';
 
             if (isMe) {
-                card.setAttribute('onclick', 'toggleMute()');
-                card.title = "Mutiraj";
+                card.setAttribute('onclick', 'window.toggleMute()');
+                card.title = "Toggle mute (click)";
             }
 
             card.innerHTML = `
                 <div class="avatar-container">
-                    <div class="avatar" id="avatar-${uid}">${icon}</div>
+                    <div class="avatar" id="avatar-${uid}">${randomIcon}</div>
                 </div>
                 <div class="username">${username}${isMe ? ' (Ti)' : ''}</div>
             `;
@@ -239,25 +227,41 @@
             await client.subscribe(user, mediaType);
             if (mediaType === "audio") {
                 user.audioTrack.play();
-                drawUser(user.uid, user.uid, '👤'); 
+                const avatar = document.getElementById(`avatar-${user.uid}`);
+                if (avatar) {
+                    avatar.classList.remove('muted');
+                } else {
+                    drawUser(user.uid, user.uid);
+                }
             }
         });
 
-        client.on("user-unpublished", (user) => {
+        client.on("user-unpublished", (user, mediaType) => {
+            if (mediaType === "audio") {
+                const avatar = document.getElementById(`avatar-${user.uid}`);
+                if (avatar) {
+                    avatar.classList.add('muted');
+                }
+            }
+        });
+
+        client.on("user-left", (user) => {
             const el = document.getElementById(`user-${user.uid}`);
             if (el) el.remove();
         });
 
         client.on("user-joined", (user) => {
-            drawUser(user.uid, user.uid, '👤');
+            drawUser(user.uid, user.uid);
         });
 
         document.getElementById('join-btn').onclick = async () => {
             try {
                 await client.join(APP_ID, CHANNEL, null, myUsername);
+                
                 client.remoteUsers.forEach(user => {
-                    drawUser(user.uid, user.uid, '👤');
+                    drawUser(user.uid, user.uid);
                 });
+
                 localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
                 await client.publish(localTracks.audioTrack);
 
@@ -265,7 +269,7 @@
                 
                 document.getElementById('join-btn').style.display = 'none';
                 document.getElementById('leave-btn').style.display = 'block';
-                document.getElementById('status').innerText = "Na vezi sa ekipom 🍻";
+                document.getElementById('status').innerText = "Na vezi 🍻";
                 document.getElementById('status').style.color = "#22c55e";
             } catch (e) {
                 alert("Proverite dozvolu za mikrofon!");
@@ -283,12 +287,13 @@
 
         client.enableAudioVolumeIndicator();
         client.on("volume-indicator", (volumes) => {
-            document.querySelectorAll('.avatar').forEach(av => av.classList.remove('speaking'));
+            document.querySelectorAll('.avatar.speaking').forEach(av => {
+                av.classList.remove('speaking');
+            });
 
             volumes.forEach((volume) => {
                 const actualUid = volume.uid === 0 ? client.uid : volume.uid;
                 const avatar = document.getElementById(`avatar-${actualUid}`);
-                
                 if (avatar && volume.level > 5) { 
                     avatar.classList.add('speaking');
                 }
@@ -302,11 +307,6 @@
             }
             client.leave();
         };
-
-        document.addEventListener("visibilitychange", function() {
-            if (document.visibilityState === 'hidden') {
-            }
-        });
     </script>
 </body>
 </html>
