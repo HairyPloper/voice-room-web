@@ -168,14 +168,14 @@
 
     <div class="header">
         <h2>LINKICE 🔗</h2>
-        <p id="status" style="margin:8px 0 0; font-size: 0.85rem; color: #64748b; font-weight: 500;">Spremni za povezivanje</p>
+        <p id="status" style="margin:8px 0 0; font-size: 0.85rem; color: #64748b; font-weight: 500;">Spremne ____</p>
     </div>
 
     <div id="user-grid"></div>
 
     <div class="controls">
-        <button id="join-btn" class="btn join-btn">Uđi u Linkice</button>
-        <button id="leave-btn" class="btn leave-btn">Napusti sobu</button>
+        <button id="join-btn" class="btn join-btn">🍺 Upadni 💬</button>
+        <button id="leave-btn" class="btn leave-btn">🌙 Ćaoo drugari 👋</button>
     </div>
 
     <script>
@@ -203,7 +203,7 @@
                 myAvatar.classList.toggle('muted', isMuted);
             }
             
-            document.getElementById('status').innerText = isMuted ? "MUTIRAN 🔇" : "POVEZANO • UŽIVO";
+            document.getElementById('status').innerText = isMuted ? "Mutiran 🔇" : "Na vezi sa ekipom 🍻";
             document.getElementById('status').style.color = isMuted ? "#ef4444" : "#22c55e";
         }
 
@@ -211,7 +211,7 @@
             if (document.getElementById(`user-${uid}`)) {
                 if (username !== "Korisnik...") {
                     const nameTag = document.querySelector(`#user-${uid} .username`);
-                    if (nameTag) nameTag.innerText = username + (isMe ? ' (Ti)' : '');
+                    if (nameTag) nameTag.innerText = username + (isMe ? ' (Ja)' : '');
                 }
                 return;
             }
@@ -223,7 +223,7 @@
 
             if (isMe) {
                 card.setAttribute('onclick', 'toggleMute()');
-                card.title = "Klikni da se mutiraš";
+                card.title = "Mutiraj";
             }
 
             card.innerHTML = `
@@ -265,7 +265,7 @@
                 
                 document.getElementById('join-btn').style.display = 'none';
                 document.getElementById('leave-btn').style.display = 'block';
-                document.getElementById('status').innerText = "POVEZANO • UŽIVO";
+                document.getElementById('status').innerText = "Na vezi sa ekipom 🍻";
                 document.getElementById('status').style.color = "#22c55e";
             } catch (e) {
                 alert("Proverite dozvolu za mikrofon!");
@@ -293,6 +293,19 @@
                     avatar.classList.add('speaking');
                 }
             });
+        });
+
+        window.onbeforeunload = function() {
+            if (localTracks.audioTrack) {
+                localTracks.audioTrack.stop();
+                localTracks.audioTrack.close();
+            }
+            client.leave();
+        };
+
+        document.addEventListener("visibilitychange", function() {
+            if (document.visibilityState === 'hidden') {
+            }
         });
     </script>
 </body>
