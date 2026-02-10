@@ -88,13 +88,13 @@
 
         .user-card.active .volume-controls {
             height: 40px;
-            margin-top: 10px;
+            margin-top: 5px;
             opacity: 1;
         }   
 
         .volume-slider {
             width: 90px;
-            height: 6px;
+            height: 9px;
             border-radius: 5px;
             background: #334155;
             outline: none;
@@ -270,7 +270,6 @@
                 <div class="volume-controls" onclick="event.stopPropagation()">
                     <input type="range" class="volume-slider" min="0" max="100" value="100" 
                         oninput="window.adjustVolume('${uid}', this.value)">
-                    <span style="font-size: 10px; color: #94a3b8; margin-top: 4px;">Jačina zvuka</span>
                 </div>
                 ` : ''}
             `;
