@@ -190,6 +190,7 @@
 
         let client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
         let localTracks = { audioTrack: null };
+        let isMuted = false;
 
         function toggleMute() {
             if (!localTracks.audioTrack) return;
