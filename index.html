@@ -69,33 +69,46 @@
             overflow-y: auto;
             align-content: start; 
         }
-        .user-controls-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 75px;
-            height: 75px;
-            background: rgba(15, 23, 42, 0.9);
-            border-radius: 24px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            opacity: 0;
-            transition: opacity 0.3s;
-            pointer-events: none; 
-            z-index: 10;
-        }
 
         .user-card.active .user-controls-overlay {
             opacity: 1;
             pointer-events: auto;
         }
 
+        .volume-controls {
+            height: 0;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            opacity: 0;
+        }
+
+        .user-card.active .volume-controls {
+            height: 40px;
+            margin-top: 10px;
+            opacity: 1;
+        }   
+
         .volume-slider {
-            width: 50px;
-            height: 4px;
+            width: 90px;
+            height: 6px;
+            border-radius: 5px;
+            background: #334155;
+            outline: none;
             accent-color: var(--primary);
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+
+        .volume-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 14px;
+            height: 14px;
+            background: white;
+            border-radius: 50%;
             cursor: pointer;
         }
 
@@ -248,18 +261,18 @@
             }
 
             card.innerHTML = `
-                <div class="avatar-container" style="position: relative;">
+                <div class="avatar-container">
                     <div class="avatar" id="avatar-${uid}">${randomIcon}</div>
-                    
-                    ${!isMe ? `
-                    <div class="user-controls-overlay" onclick="event.stopPropagation()">
-                        <span class="mute-indicator">🔊</span>
-                        <input type="range" class="volume-slider" min="0" max="100" value="100" 
-                            oninput="window.adjustVolume('${uid}', this.value)">
-                    </div>
-                    ` : ''}
                 </div>
                 <div class="username">${username}${isMe ? ' (Ti)' : ''}</div>
+                
+                ${!isMe ? `
+                <div class="volume-controls" onclick="event.stopPropagation()">
+                    <input type="range" class="volume-slider" min="0" max="100" value="100" 
+                        oninput="window.adjustVolume('${uid}', this.value)">
+                    <span style="font-size: 10px; color: #94a3b8; margin-top: 4px;">Jačina zvuka</span>
+                </div>
+                ` : ''}
             `;
             grid.appendChild(card);
         }
@@ -345,11 +358,6 @@
             const remoteUser = client.remoteUsers.find(u => u.uid == uid);
             if (remoteUser && remoteUser.audioTrack) {
                 remoteUser.audioTrack.setVolume(parseInt(volume));
-                
-                const indicator = document.querySelector(`#user-${uid} .mute-indicator`);
-                if (indicator) {
-                    indicator.innerText = volume == 0 ? "🔇" : "🔊";
-                }
             }
         };
 
