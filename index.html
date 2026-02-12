@@ -1,378 +1,462 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="sr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Linkice</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>">
+    <link
+      rel="icon"
+      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>"
+    />
     <script src="https://download.agora.io/sdk/release/AgoraRTC_N-4.11.0.js"></script>
     <style>
-        :root {
-            --primary: #6366f1;
-            --secondary: #a855f7;
-            --bg: #0f172a;
-            --card: rgba(30, 41, 59, 0.7);
-            --success: #22c55e;
-            --danger: #ef4444;
-        }
-        
-        .avatar.muted {
-            opacity: 0.4;
-            filter: grayscale(1);
-            border: 2px dashed rgba(255,255,255,0.3) !important;
-            transform: scale(0.95);
-        }
+      :root {
+        --primary: #6366f1;
+        --secondary: #a855f7;
+        --bg: #0f172a;
+        --card: rgba(30, 41, 59, 0.7);
+        --success: #22c55e;
+        --danger: #ef4444;
+      }
 
-        .user-card[onclick] {
-            cursor: pointer;
-        }
+      .avatar.muted {
+        opacity: 0.4;
+        filter: grayscale(1);
+        border: 2px dashed rgba(255, 255, 255, 0.3) !important;
+        transform: scale(0.95);
+      }
 
-        body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
-            color: white;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
-        }
+      .user-card[onclick] {
+        cursor: pointer;
+      }
 
-        .header {
-            padding: 25px;
-            text-align: center;
-            width: 100%;
-            background: rgba(15, 23, 42, 0.8);
-            backdrop-filter: blur(10px);
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
+      body {
+        font-family:
+          "Inter",
+          system-ui,
+          -apple-system,
+          sans-serif;
+        background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+        color: white;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        height: 100vh;
+        overflow: hidden;
+      }
 
-        h2 { 
-            margin: 0; 
-            font-size: 1.5rem; 
-            background: linear-gradient(to right, #818cf8, #c084fc);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: 1px;
-        }
+      .header {
+        padding: 25px;
+        text-align: center;
+        width: 100%;
+        background: rgba(15, 23, 42, 0.8);
+        backdrop-filter: blur(10px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      }
 
-        #user-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            grid-auto-rows: min-content; 
-            gap: 25px;
-            width: 90%;
-            max-width: 500px;
-            padding: 40px 20px;
-            flex-grow: 1;
-            overflow-y: auto;
-            align-content: start; 
-        }
+      h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        background: linear-gradient(to right, #818cf8, #c084fc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: 1px;
+      }
 
-        .user-card.active .user-controls-overlay {
-            opacity: 1;
-            pointer-events: auto;
-        }
+      #user-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+        grid-auto-rows: min-content;
+        gap: 25px;
+        width: 90%;
+        max-width: 500px;
+        padding: 40px 20px;
+        flex-grow: 1;
+        overflow-y: auto;
+        align-content: start;
+      }
 
-        .volume-controls {
-            height: 0;
-            overflow: hidden;
-            transition: all 0.3s ease;
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            opacity: 0;
-        }
+      .user-card.active .user-controls-overlay {
+        opacity: 1;
+        pointer-events: auto;
+      }
 
-        .user-card.active .volume-controls {
-            height: 40px;
-            margin-top: 5px;
-            opacity: 1;
-        }   
+      .volume-controls {
+        height: 0;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        opacity: 0;
+      }
 
-        .volume-slider {
-            width: 90px;
-            height: 9px;
-            border-radius: 5px;
-            background: #334155;
-            outline: none;
-            accent-color: var(--primary);
-            -webkit-appearance: none;
-            cursor: pointer;
-        }
+      .user-card.active .volume-controls {
+        height: 40px;
+        margin-top: 5px;
+        opacity: 1;
+      }
 
-        .volume-slider::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 14px;
-            height: 14px;
-            background: white;
-            border-radius: 50%;
-            cursor: pointer;
-        }
+      .volume-slider {
+        width: 90px;
+        height: 9px;
+        border-radius: 5px;
+        background: #334155;
+        outline: none;
+        accent-color: var(--primary);
+        -webkit-appearance: none;
+        cursor: pointer;
+      }
 
-        .mute-indicator {
-            font-size: 14px;
-            margin-bottom: 5px;
-        }
-        .user-card {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            animation: slideUp 0.4s ease-out;
-            height: min-content; 
-            align-self: start;
-        }
+      .volume-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 14px;
+        height: 14px;
+        background: white;
+        border-radius: 50%;
+        cursor: pointer;
+      }
 
-        .avatar-container {
-            position: relative;
-            padding: 5px;
-        }
+      .mute-indicator {
+        font-size: 14px;
+        margin-bottom: 5px;
+      }
+      .user-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        animation: slideUp 0.4s ease-out;
+        height: min-content;
+        align-self: start;
+      }
 
-        .avatar {
-            width: 75px;
-            height: 75px;
-            border-radius: 24px;
-            background: var(--card);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 38px;
-            border: 1px solid rgba(255,255,255,0.1);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-        }
+      .avatar-container {
+        position: relative;
+        padding: 5px;
+      }
 
-        .username {
-            margin-top: 12px;
-            font-size: 13px;
-            font-weight: 500;
-            color: #94a3b8;
-            background: rgba(0,0,0,0.2);
-            padding: 4px 10px;
-            border-radius: 20px;
-            text-align: center;
-        }
+      .avatar {
+        width: 75px;
+        height: 75px;
+        border-radius: 24px;
+        background: var(--card);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 38px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+      }
 
-        .controls {
-            background: rgba(15, 23, 42, 0.95);
-            padding: 20px 20px 40px 20px;
-            display: flex;
-            justify-content: center;
-            width: 100%;
-            border-top: 1px solid rgba(255,255,255,0.1);
-            position: sticky; 
-            bottom: 0;
-            box-sizing: border-box;
-        }
+      .username {
+        margin-top: 12px;
+        font-size: 13px;
+        font-weight: 500;
+        color: #94a3b8;
+        background: rgba(0, 0, 0, 0.2);
+        padding: 4px 10px;
+        border-radius: 20px;
+        text-align: center;
+      }
 
-        .btn {
-            padding: 16px 40px;
-            border-radius: 16px;
-            border: none;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            color: white;
-            transition: 0.3s;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            width: 80%;
-            max-width: 300px;
-        }
+      .controls {
+        background: rgba(15, 23, 42, 0.95);
+        padding: 20px 20px 40px 20px;
+        display: flex;
+        justify-content: center;
+        width: 100%;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        position: sticky;
+        bottom: 0;
+        box-sizing: border-box;
+      }
 
-        .join-btn { background: linear-gradient(135deg, var(--primary), var(--secondary)); }
-        .leave-btn { background: #1e293b; border: 1px solid rgba(255,255,255,0.1); color: var(--danger); display: none; }
+      .btn {
+        padding: 16px 40px;
+        border-radius: 16px;
+        border: none;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+        color: white;
+        transition: 0.3s;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        width: 80%;
+        max-width: 300px;
+      }
 
-        @keyframes slideUp {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+      .join-btn {
+        background: linear-gradient(135deg, var(--primary), var(--secondary));
+      }
+      .leave-btn {
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--danger);
+        display: none;
+      }
 
-        @keyframes pulse-green {
-            0% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-            70% { box-shadow: 0 0 0 15px rgba(34, 197, 94, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
         }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
 
-        .speaking {
-            border-color: var(--success) !important;
-            animation: pulse-green 1.5s infinite;
-            transform: scale(1.05);
+      @keyframes pulse-green {
+        0% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
         }
+        70% {
+          box-shadow: 0 0 0 15px rgba(34, 197, 94, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+        }
+      }
+
+      .speaking {
+        border-color: var(--success) !important;
+        animation: pulse-green 1.5s infinite;
+        transform: scale(1.05);
+      }
     </style>
-</head>
-<body>
-
+  </head>
+  <body>
     <div class="header">
-        <h2>LINKICE 🔗</h2>
-        <p id="status" style="margin:8px 0 0; font-size: 0.85rem; color: #ffffff; font-weight: 500;">Spremne</p>
+      <h2>LINKICE 🔗</h2>
+      <p
+        id="status"
+        style="
+          margin: 8px 0 0;
+          font-size: 0.85rem;
+          color: #ffffff;
+          font-weight: 500;
+        "
+      >
+        Spremne
+      </p>
     </div>
 
     <div id="user-grid"></div>
 
     <div class="controls">
-        <button id="join-btn" class="btn join-btn">🍺 Upadni 💬</button>
-        <button id="leave-btn" class="btn leave-btn">🌙 Ćaoo drugari 👋</button>
+      <button id="join-btn" class="btn join-btn">🍺 Upadni 💬</button>
+      <button id="leave-btn" class="btn leave-btn">🌙 Ćaoo drugari 👋</button>
     </div>
 
     <script>
-        const APP_ID = "beb2d2e844954540847d8bf07648926e"; 
-        const CHANNEL = "Linkice";
-        const params = new URLSearchParams(window.location.search);
-        const myUsername = params.get('name') || "Gost";
+      const APP_ID = "beb2d2e844954540847d8bf07648926e";
+      const CHANNEL = "Linkice";
+      const params = new URLSearchParams(window.location.search);
+      const myUsername = params.get("name") || "Gost";
 
-        const animals = ['🦁', '🦊', '🐨', '🐘', '🐯', '🐼', '🐙', '🦉', '🐸', '🦓', '🦄', '🐝'];
-        const myIcon = animals[Math.floor(Math.random() * animals.length)];
+      const animals = [
+        "🦁",
+        "🦊",
+        "🐨",
+        "🐘",
+        "🐯",
+        "🐼",
+        "🐙",
+        "🦉",
+        "🐸",
+        "🦓",
+        "🦄",
+        "🐝",
+      ];
+      const myIcon = animals[Math.floor(Math.random() * animals.length)];
 
-        let client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
-        let localTracks = { audioTrack: null };
-        let isMuted = false;
+      let client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+      let localTracks = { audioTrack: null };
+      let isMuted = false;
+      let wakeLock = null;
 
-        window.toggleMute = async function() {
-            if (!localTracks.audioTrack) return;
-            isMuted = !isMuted;
-            
-            await localTracks.audioTrack.setEnabled(!isMuted);
-            
-            const myAvatar = document.getElementById(`avatar-${client.uid}`);
-            if (myAvatar) {
-                myAvatar.classList.toggle('muted', isMuted);
-            }
-            
-            const statusEl = document.getElementById('status');
-            statusEl.innerText = isMuted ? "Mutiran si 🤐" : "Na vezi 🍻";
-            statusEl.style.color = isMuted ? "#ef4444" : "#22c55e";
-        };
+      async function requestWakeLock() {
+        try {
+          if ("wakeLock" in navigator) {
+            wakeLock = await navigator.wakeLock.request("screen");
+            console.log("Ekran ostaje upaljen");
+          }
+        } catch (err) {
+          console.log("Wake Lock nije uspeo:", err.name, err.message);
+        }
+      }
 
-        function drawUser(uid, username, icon, isMe = false) {
-            if (document.getElementById(`user-${uid}`)) return;
-            
-            const randomIcon = icon || animals[Math.floor(Math.random() * animals.length)];
-            const grid = document.getElementById('user-grid');
-            const card = document.createElement('div');
-            card.id = `user-${uid}`;
-            card.className = 'user-card';
+      function drawUser(uid, username, icon, isMe = false) {
+        if (document.getElementById(`user-${uid}`)) return;
 
-            if (isMe) {
-                card.setAttribute('onclick', 'window.toggleMute()');
-            } else {
-                card.setAttribute('onclick', `this.classList.toggle('active')`);
-            }
+        const randomIcon =
+          icon || animals[Math.floor(Math.random() * animals.length)];
+        const grid = document.getElementById("user-grid");
+        const card = document.createElement("div");
+        card.id = `user-${uid}`;
+        card.className = "user-card";
 
-            card.innerHTML = `
+        if (isMe) {
+          card.setAttribute("onclick", "window.toggleMute()");
+        } else {
+          card.setAttribute("onclick", `this.classList.toggle('active')`);
+        }
+
+        card.innerHTML = `
                 <div class="avatar-container">
                     <div class="avatar" id="avatar-${uid}">${randomIcon}</div>
                 </div>
-                <div class="username">${username}${isMe ? ' (Ti)' : ''}</div>
+                <div class="username">${username}${isMe ? " (Ti)" : ""}</div>
                 
-                ${!isMe ? `
+                ${
+                  !isMe
+                    ? `
                 <div class="volume-controls" onclick="event.stopPropagation()">
                     <input type="range" class="volume-slider" min="0" max="100" value="100" 
                         oninput="window.adjustVolume('${uid}', this.value)">
                 </div>
-                ` : ''}
+                `
+                    : ""
+                }
             `;
-            grid.appendChild(card);
+        grid.appendChild(card);
+      }
+
+      client.on("user-published", async (user, mediaType) => {
+        await client.subscribe(user, mediaType);
+        if (mediaType === "audio") {
+          user.audioTrack.play();
+          const avatar = document.getElementById(`avatar-${user.uid}`);
+          if (avatar) {
+            avatar.classList.remove("muted");
+          } else {
+            drawUser(user.uid, user.uid);
+          }
+        }
+      });
+
+      client.on("user-unpublished", (user, mediaType) => {
+        if (mediaType === "audio") {
+          const avatar = document.getElementById(`avatar-${user.uid}`);
+          if (avatar) {
+            avatar.classList.add("muted");
+          }
+        }
+      });
+
+      client.on("user-left", (user) => {
+        const el = document.getElementById(`user-${user.uid}`);
+        if (el) el.remove();
+      });
+
+      client.on("user-joined", (user) => {
+        drawUser(user.uid, user.uid);
+      });
+
+      client.on("connection-state-change", (curState, revState, reason) => {
+        console.log("Status veze:", curState);
+        if (curState === "DISCONNECTED" && reason === "LEAVE") {
+        } else if (curState === "RECONNECTING") {
+          document.getElementById("status").innerText = "Povezivanje... 🔄";
+        }
+      });
+
+      client.enableAudioVolumeIndicator();
+
+      client.on("volume-indicator", (volumes) => {
+        document.querySelectorAll(".avatar.speaking").forEach((av) => {
+          av.classList.remove("speaking");
+        });
+
+        volumes.forEach((volume) => {
+          const actualUid = volume.uid === 0 ? client.uid : volume.uid;
+          const avatar = document.getElementById(`avatar-${actualUid}`);
+          if (avatar && volume.level > 5) {
+            avatar.classList.add("speaking");
+          }
+        });
+      });
+
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".user-card")) {
+          document
+            .querySelectorAll(".user-card.active")
+            .forEach((c) => c.classList.remove("active"));
+        }
+      });
+
+      document.getElementById("join-btn").onclick = async () => {
+        try {
+          await client.join(APP_ID, CHANNEL, null, myUsername);
+
+          client.remoteUsers.forEach((user) => {
+            drawUser(user.uid, user.uid);
+          });
+
+          localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+          await client.publish(localTracks.audioTrack);
+
+          drawUser(client.uid, myUsername, myIcon, true);
+          await requestWakeLock();
+
+          document.getElementById("join-btn").style.display = "none";
+          document.getElementById("leave-btn").style.display = "block";
+          document.getElementById("status").innerText = "Na vezi 🍻";
+          document.getElementById("status").style.color = "#22c55e";
+        } catch (e) {
+          alert("Proverite dozvolu za mikrofon!");
+        }
+      };
+
+      document.getElementById("leave-btn").onclick = async () => {
+        if (wakeLock !== null) {
+          await wakeLock.release();
+          wakeLock = null;
+        }
+        if (localTracks.audioTrack) {
+          localTracks.audioTrack.stop();
+          localTracks.audioTrack.close();
+        }
+        await client.leave();
+        location.reload();
+      };
+
+      window.onbeforeunload = function () {
+        if (localTracks.audioTrack) {
+          localTracks.audioTrack.stop();
+          localTracks.audioTrack.close();
+        }
+        client.leave();
+      };
+
+      window.adjustVolume = function (uid, volume) {
+        const remoteUser = client.remoteUsers.find((u) => u.uid == uid);
+        if (remoteUser && remoteUser.audioTrack) {
+          remoteUser.audioTrack.setVolume(parseInt(volume));
+        }
+      };
+
+      window.toggleMute = async function () {
+        if (!localTracks.audioTrack) return;
+        isMuted = !isMuted;
+
+        await localTracks.audioTrack.setEnabled(!isMuted);
+
+        const myAvatar = document.getElementById(`avatar-${client.uid}`);
+        if (myAvatar) {
+          myAvatar.classList.toggle("muted", isMuted);
         }
 
-        client.on("user-published", async (user, mediaType) => {
-            await client.subscribe(user, mediaType);
-            if (mediaType === "audio") {
-                user.audioTrack.play();
-                const avatar = document.getElementById(`avatar-${user.uid}`);
-                if (avatar) {
-                    avatar.classList.remove('muted');
-                } else {
-                    drawUser(user.uid, user.uid);
-                }
-            }
-        });
-
-        client.on("user-unpublished", (user, mediaType) => {
-            if (mediaType === "audio") {
-                const avatar = document.getElementById(`avatar-${user.uid}`);
-                if (avatar) {
-                    avatar.classList.add('muted');
-                }
-            }
-        });
-
-        client.on("user-left", (user) => {
-            const el = document.getElementById(`user-${user.uid}`);
-            if (el) el.remove();
-        });
-
-        client.on("user-joined", (user) => {
-            drawUser(user.uid, user.uid);
-        });
-
-        document.getElementById('join-btn').onclick = async () => {
-            try {
-                await client.join(APP_ID, CHANNEL, null, myUsername);
-                
-                client.remoteUsers.forEach(user => {
-                    drawUser(user.uid, user.uid);
-                });
-
-                localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
-                await client.publish(localTracks.audioTrack);
-
-                drawUser(client.uid, myUsername, myIcon, true);
-                
-                document.getElementById('join-btn').style.display = 'none';
-                document.getElementById('leave-btn').style.display = 'block';
-                document.getElementById('status').innerText = "Na vezi 🍻";
-                document.getElementById('status').style.color = "#22c55e";
-            } catch (e) {
-                alert("Proverite dozvolu za mikrofon!");
-            }
-        };
-
-        document.getElementById('leave-btn').onclick = async () => {
-            if (localTracks.audioTrack) {
-                localTracks.audioTrack.stop();
-                localTracks.audioTrack.close();
-            }
-            await client.leave();
-            location.reload(); 
-        };
-
-        client.enableAudioVolumeIndicator();
-        client.on("volume-indicator", (volumes) => {
-            document.querySelectorAll('.avatar.speaking').forEach(av => {
-                av.classList.remove('speaking');
-            });
-
-            volumes.forEach((volume) => {
-                const actualUid = volume.uid === 0 ? client.uid : volume.uid;
-                const avatar = document.getElementById(`avatar-${actualUid}`);
-                if (avatar && volume.level > 5) { 
-                    avatar.classList.add('speaking');
-                }
-            });
-        });
-
-        window.adjustVolume = function(uid, volume) {
-            const remoteUser = client.remoteUsers.find(u => u.uid == uid);
-            if (remoteUser && remoteUser.audioTrack) {
-                remoteUser.audioTrack.setVolume(parseInt(volume));
-            }
-        };
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.user-card')) {
-                document.querySelectorAll('.user-card.active').forEach(c => c.classList.remove('active'));
-            }
-        });
-
-        window.onbeforeunload = function() {
-            if (localTracks.audioTrack) {
-                localTracks.audioTrack.stop();
-                localTracks.audioTrack.close();
-            }
-            client.leave();
-        };
+        const statusEl = document.getElementById("status");
+        statusEl.innerText = isMuted ? "Mutiran si 🤐" : "Na vezi 🍻";
+        statusEl.style.color = isMuted ? "#ef4444" : "#22c55e";
+      };
     </script>
-</body>
+  </body>
 </html>
