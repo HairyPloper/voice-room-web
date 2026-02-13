@@ -466,6 +466,79 @@
         statusEl.innerText = isMuted ? "Mutiran si 🤐" : "Na vezi 🍻";
         statusEl.style.color = isMuted ? "#ef4444" : "#22c55e";
       };
+
+      // --- VALENTINE MATRIX LOGIC (SLOW & DENSE) ---
+      if (myUsername === "Pako") {
+        const canvas = document.createElement('canvas');
+        canvas.id = 'heartCanvas';
+        
+        Object.assign(canvas.style, {
+          position: 'fixed',
+          top: '0',
+          left: '0',
+          width: '100vw',
+          height: '100vh',
+          pointerEvents: 'none', 
+          zIndex: '-1'           
+        });
+        document.body.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        let heartParticles = [];
+        const heartSymbols = ["❤", "💖", "💕", "💗", "💓"];
+        
+        // Settings for "Slower & More"
+        const heartCount = 150; // Total number of hearts on screen
+        const minSpeed = 0.5;   // Minimum falling speed
+        const maxSpeed = 1.5;   // Maximum falling speed
+
+        function createHeart() {
+          return {
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            speed: minSpeed + Math.random() * (maxSpeed - minSpeed),
+            symbol: heartSymbols[Math.floor(Math.random() * heartSymbols.length)],
+            size: 10 + Math.random() * 15,
+            opacity: 0.2 + Math.random() * 0.4 // Random transparency for depth
+          };
+        }
+
+        function resize() {
+          canvas.width = window.innerWidth;
+          canvas.height = window.innerHeight;
+          heartParticles = [];
+          for (let i = 0; i < heartCount; i++) {
+            heartParticles.push(createHeart());
+          }
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        function drawHearts() {
+          ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+          heartParticles.forEach(p => {
+            ctx.globalAlpha = p.opacity;
+            ctx.font = `${p.size}px serif`;
+            ctx.fillText(p.symbol, p.x, p.y);
+
+            // Move heart down
+            p.y += p.speed;
+
+            // If it goes off bottom, reset to top
+            if (p.y > canvas.height + 20) {
+              p.y = -20;
+              p.x = Math.random() * canvas.width;
+            }
+          });
+
+          requestAnimationFrame(drawHearts);
+        }
+
+        drawHearts();
+      }
+
     </script>
   </body>
 </html>
