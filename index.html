@@ -467,77 +467,90 @@
         statusEl.style.color = isMuted ? "#ef4444" : "#22c55e";
       };
 
-      // --- VALENTINE MATRIX LOGIC (SLOW & DENSE) ---
-      if (myUsername === "Pako") {
+      // --- SPECIAL EFFECTS LOGIC ---
+      (function() {
+        if (myUsername !== "Pako" && myUsername !== "Anton") return;
+
         const canvas = document.createElement('canvas');
-        canvas.id = 'heartCanvas';
-        
         Object.assign(canvas.style, {
           position: 'fixed',
           top: '0',
           left: '0',
           width: '100vw',
           height: '100vh',
-          pointerEvents: 'none', 
-          zIndex: '-1'           
+          pointerEvents: 'none',
+          zIndex: '-1'
         });
         document.body.appendChild(canvas);
 
         const ctx = canvas.getContext('2d');
-        let heartParticles = [];
-        const heartSymbols = ["❤", "💖", "💕", "💗", "💓"];
+        let particles = [];
         
-        // Settings for "Slower & More"
-        const heartCount = 150; // Total number of hearts on screen
-        const minSpeed = 0.5;   // Minimum falling speed
-        const maxSpeed = 1.5;   // Maximum falling speed
+        // Configuration based on Username
+        const isPako = (myUsername === "Pako");
+        const particleCount = isPako ? 150 : 200; // More snow for Anton
+        const symbols = ["❤", "💖", "💕", "💗", "💓"];
 
-        function createHeart() {
+        function createParticle() {
           return {
             x: Math.random() * canvas.width,
             y: Math.random() * canvas.height,
-            speed: minSpeed + Math.random() * (maxSpeed - minSpeed),
-            symbol: heartSymbols[Math.floor(Math.random() * heartSymbols.length)],
-            size: 10 + Math.random() * 15,
-            opacity: 0.2 + Math.random() * 0.4 // Random transparency for depth
+            speed: 0.4 + Math.random() * 0.8, // Slow movement
+            drift: (Math.random() - 0.5) * 0.3, // Slight side-to-side drift
+            size: isPako ? (10 + Math.random() * 15) : (2 + Math.random() * 3),
+            opacity: 0.3 + Math.random() * 0.5,
+            symbol: symbols[Math.floor(Math.random() * symbols.length)]
           };
         }
 
         function resize() {
           canvas.width = window.innerWidth;
           canvas.height = window.innerHeight;
-          heartParticles = [];
-          for (let i = 0; i < heartCount; i++) {
-            heartParticles.push(createHeart());
+          particles = [];
+          for (let i = 0; i < particleCount; i++) {
+            particles.push(createParticle());
           }
         }
 
         window.addEventListener('resize', resize);
         resize();
 
-        function drawHearts() {
+        function draw() {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-          heartParticles.forEach(p => {
+          particles.forEach(p => {
             ctx.globalAlpha = p.opacity;
-            ctx.font = `${p.size}px serif`;
-            ctx.fillText(p.symbol, p.x, p.y);
+            
+            if (isPako) {
+              // Draw Heart for Pako
+              ctx.font = `${p.size}px serif`;
+              ctx.fillText(p.symbol, p.x, p.y);
+            } else {
+              // Draw White Dot for Anton
+              ctx.fillStyle = "white";
+              ctx.beginPath();
+              ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+              ctx.fill();
+            }
 
-            // Move heart down
+            // Update position
             p.y += p.speed;
+            p.x += p.drift;
 
-            // If it goes off bottom, reset to top
+            // Reset when off screen
             if (p.y > canvas.height + 20) {
               p.y = -20;
               p.x = Math.random() * canvas.width;
             }
+            if (p.x > canvas.width) p.x = 0;
+            if (p.x < 0) p.x = canvas.width;
           });
 
-          requestAnimationFrame(drawHearts);
+          requestAnimationFrame(draw);
         }
 
-        drawHearts();
-      }
+        draw();
+      })();
 
     </script>
   </body>
