@@ -258,7 +258,7 @@
       const APP_ID = "beb2d2e844954540847d8bf07648926e";
       const CHANNEL = "Linkice";
       const params = new URLSearchParams(window.location.search);
-      const myUsername = params.get("name") || "Tiba biba";
+      const myUsername = params.get("name") || "Gost";
 
       const animals = [
         "🦁",
@@ -293,7 +293,7 @@
       }
 
       function getUniqueUsername(baseName) {
-        if(baseName!="Tiba biba") return baseName;
+        if(baseName!="Gost") return baseName;
         const randomId = Math.floor(1000 + Math.random() * 9000);
         return `${baseName} ${randomId}`;
       }
