@@ -250,15 +250,15 @@
     <div id="user-grid"></div>
 
     <div class="controls">
-      <button id="join-btn" class="btn join-btn">🍺 Upadni 💬</button>
-      <button id="leave-btn" class="btn leave-btn">🌙 Ćaoo drugari 👋</button>
+      <button id="join-btn" class="btn join-btn">🍺 Upadni</button>
+      <button id="leave-btn" class="btn leave-btn">Ćaoo drugari 👋👋</button>
     </div>
 
     <script>
       const APP_ID = "beb2d2e844954540847d8bf07648926e";
       const CHANNEL = "Linkice";
       const params = new URLSearchParams(window.location.search);
-      const myUsername = params.get("name") || "Gost";
+      const myUsername = params.get("name") || "Šmiber";
 
       const animals = [
         "🦁",
@@ -290,6 +290,11 @@
         } catch (err) {
           console.log("Wake Lock nije uspeo:", err.name, err.message);
         }
+      }
+
+      function getUniqueUsername(baseName) {
+        const randomId = Math.floor(1000 + Math.random() * 9000);
+        return `${baseName} ${randomId}`;
       }
 
       function drawUser(uid, username, icon, isMe = false) {
@@ -359,13 +364,13 @@
         drawUser(user.uid, user.uid);
       });
 
-      client.on("connection-state-change", (curState, revState, reason) => {
-        console.log("Status veze:", curState);
-        if (curState === "DISCONNECTED" && reason === "LEAVE") {
-        } else if (curState === "RECONNECTING") {
-          document.getElementById("status").innerText = "Povezivanje... 🔄";
-        }
-      });
+      // client.on("connection-state-change", (curState, revState, reason) => {
+      //   console.log("Status veze:", curState);
+      //   if (curState === "DISCONNECTED" && reason === "LEAVE") {
+      //   } else if (curState === "RECONNECTING") {
+      //     document.getElementById("status").innerText = "Povezivanje... 🔄";
+      //   }
+      // });
 
       client.enableAudioVolumeIndicator();
 
@@ -377,7 +382,7 @@
         volumes.forEach((volume) => {
           const actualUid = volume.uid === 0 ? client.uid : volume.uid;
           const avatar = document.getElementById(`avatar-${actualUid}`);
-          if (avatar && volume.level > 5) {
+          if (avatar && volume.level > 3) {
             avatar.classList.add("speaking");
           }
         });
@@ -393,7 +398,10 @@
 
       document.getElementById("join-btn").onclick = async () => {
         try {
-          await client.join(APP_ID, CHANNEL, null, myUsername);
+
+          let uniqueName = getUniqueUsername(myUsername);
+
+          await client.join(APP_ID, CHANNEL, null, uniqueName);
 
           client.remoteUsers.forEach((user) => {
             drawUser(user.uid, user.uid);
@@ -402,7 +410,7 @@
           localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
           await client.publish(localTracks.audioTrack);
 
-          drawUser(client.uid, myUsername, myIcon, true);
+          drawUser(client.uid, uniqueName, myIcon, true);
           await requestWakeLock();
 
           document.getElementById("join-btn").style.display = "none";
