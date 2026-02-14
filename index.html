@@ -292,6 +292,21 @@
         }
       }
 
+    function sanitizeForAgora(name) {
+      const map = {
+        'š': 'sh', 'Š': 'Sh',
+        'ć': 'ch', 'Ć': 'Ch',
+        'č': 'ch', 'Č': 'Ch',
+        'ž': 'zh', 'Ž': 'Zh',
+        'đ': 'dj', 'Đ': 'Dj',
+        'dž': 'dz', 'Dž': 'Dz', 'DŽ': 'DZ'
+      };
+      
+      let cleanName = name.replace(/[šćčžđ]|dž/gi, matched => map[matched] || map[matched.toLowerCase()]);
+      
+      return cleanName.replace(/\s+/g, '').replace(/[^a-zA-Z0-9!#$%&()+-:;<=.>?@[\]^_{|}~,]/g, '');
+    }
+
       function getUniqueUsername(baseName) {
         if(baseName!="Gost") return baseName;
         const randomId = Math.floor(1000 + Math.random() * 9000);
@@ -399,8 +414,10 @@
 
       document.getElementById("join-btn").onclick = async () => {
         try {
+          // 1. Sanitize the base name first
+          const cleanBaseName = sanitizeForAgora(myUsername);
 
-          let uniqueName = getUniqueUsername(myUsername);
+          const uniqueName = getUniqueUsername(cleanBaseName);
 
           await client.join(APP_ID, CHANNEL, null, uniqueName);
 
@@ -486,9 +503,8 @@
         const ctx = canvas.getContext('2d');
         let particles = [];
         
-        // Configuration based on Username
         const isPako = (myUsername === "Pako");
-        const particleCount = isPako ? 150 : 200; // More snow for Anton
+        const particleCount = isPako ? 150 : 200;
         const symbols = ["❤", "💖", "💕", "💗", "💓"];
 
         function createParticle() {
@@ -533,7 +549,6 @@
               ctx.fill();
             }
 
-            // Update position
             p.y += p.speed;
             p.x += p.drift;
 
