@@ -77,7 +77,8 @@ body {
 
 /* --- MOBILE OVERRIDES --- */
 @media (max-width: 767px) {
-  .video-background {
+  .video-background,
+  .video-toggle {
     display: none !important;
   }
   body {
