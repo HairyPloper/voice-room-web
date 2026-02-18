@@ -62,6 +62,7 @@
         margin: 0;
         font-size: 1.5rem;
         background: linear-gradient(to right, #818cf8, #c084fc);
+        background-clip: text;
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         letter-spacing: 1px;
@@ -110,6 +111,7 @@
         outline: none;
         accent-color: var(--primary);
         -webkit-appearance: none;
+        appearance: none;
         cursor: pointer;
       }
 
@@ -229,9 +231,54 @@
         animation: pulse-green 1.5s infinite;
         transform: scale(1.05);
       }
+      .video-background {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -2;
+        overflow: hidden;
+        background: #0f172a; /* Fallback color */
+      }
+
+      .video-background video {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        min-width: 100%;
+        min-height: 100%;
+        width: auto;
+        height: auto;
+        object-fit: cover;
+      }
+
+      .video-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(15, 23, 42, 0.6); /* This darkens the video */
+        z-index: -1; /* Sits on top of video, but under UI */
+      }
+
+      body {
+        background: transparent !important;
+      }
     </style>
   </head>
   <body>
+    <div class="video-background">
+      <div class="video-overlay"></div>
+      <video autoplay loop muted playsinline>
+        <source
+          src="https://us-west-2-epicgames.graphassets.com/cmkr1i7c9047e07n0es5291ez/cmis28lk91sq907mv9aydajlk"
+          type="video/mp4"
+        />
+      </video>
+    </div>
     <div class="header">
       <h2>LINKICE 🔗</h2>
       <p
@@ -396,7 +443,6 @@
         if (el) el.remove();
       });
 
-      // To this:
       client.on("user-joined", (user) => {
         drawUser(user.uid, getDisplayName(user.uid));
       });
@@ -435,14 +481,12 @@
 
       document.getElementById("join-btn").onclick = async () => {
         try {
-          // 1. Sanitize the base name first
           const cleanBaseName = sanitizeForAgora(myUsername);
 
           const uniqueName = getUniqueUsername(cleanBaseName);
 
           await client.join(APP_ID, CHANNEL, null, uniqueName);
 
-          // To this:
           client.remoteUsers.forEach((user) => {
             drawUser(user.uid, getDisplayName(user.uid));
           });
@@ -450,7 +494,7 @@
           localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
           await client.publish(localTracks.audioTrack);
 
-          drawUser(client.uid, getDisplayName(uniqueName), myIcon, true);
+          drawUser(client.uid, uniqueName, myIcon, true);
           await requestWakeLock();
 
           document.getElementById("join-btn").style.display = "none";
@@ -458,7 +502,7 @@
           document.getElementById("status").innerText = "Na vezi 🍻";
           document.getElementById("status").style.color = "#22c55e";
         } catch (e) {
-          alert("Proverite dozvolu za mikrofon!");
+          alert("Greška! " + (e.message || e));
         }
       };
 
@@ -508,7 +552,7 @@
 
       // --- SPECIAL EFFECTS LOGIC ---
       (function () {
-        if (myUsername !== "Pako" && myUsername !== "Anton") return;
+        // if (myUsername !== "Pako" && myUsername !== "Anton") return;
 
         const canvas = document.createElement("canvas");
         Object.assign(canvas.style, {
