@@ -126,6 +126,10 @@
         overflow-y: auto;
         align-content: center; /* Center vertically */
       }
+      .btn:disabled {
+        cursor: not-allowed;
+        filter: grayscale(0.5);
+      }
 
       /* --- USER CARDS --- */
       .user-card {
@@ -475,26 +479,47 @@
       });
 
       document.getElementById("join-btn").onclick = async () => {
+        const joinBtn = document.getElementById("join-btn");
+
+        // 1. Prevent double clicks
+        if (joinBtn.disabled) return;
+        joinBtn.disabled = true;
+        joinBtn.style.opacity = "0.5";
+        joinBtn.innerText = "Povezivanje...";
+
         const bgVideo = document.querySelector(".video-background video");
         if (bgVideo && window.innerWidth >= 768) bgVideo.play().catch(() => {});
 
         try {
           const uniqueName = getUniqueUsername(sanitizeForAgora(myUsername));
+
+          // 2. Join the channel
           await client.join(APP_ID, CHANNEL, null, uniqueName);
+
           client.remoteUsers.forEach((user) =>
             drawUser(user.uid, getDisplayName(user.uid)),
           );
+
           localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
           await client.publish(localTracks.audioTrack);
+
           drawUser(client.uid, getDisplayName(uniqueName), myIcon, true);
           await requestWakeLock();
-          document.getElementById("join-btn").style.display = "none";
-          document.getElementById("leave-btn").style.display = "flex"; // Flex ensures icon aligns
+
+          // 3. Success state
+          joinBtn.style.display = "none";
+          document.getElementById("leave-btn").style.display = "flex";
           const s = document.getElementById("status");
           s.innerText = "Povezan • Live";
           s.style.color = "#4ade80";
         } catch (e) {
-          alert("Greška! Proverite mikrofon.");
+          console.error(e);
+          alert("Greška pri spajanju. Proverite dozvolu za mikrofon.");
+
+          // 4. Reset button if it fails so they can try again
+          joinBtn.disabled = false;
+          joinBtn.style.opacity = "1";
+          joinBtn.innerHTML = "<span>🚀</span> Upadni";
         }
       };
 
