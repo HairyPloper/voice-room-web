@@ -8,6 +8,10 @@
     />
     <title>Linkice</title>
     <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
       rel="icon"
       href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🔗</text></svg>"
     />
@@ -16,30 +20,16 @@
       :root {
         --primary: #6366f1;
         --secondary: #a855f7;
-        --bg: #0f172a;
-        --card: rgba(30, 41, 59, 0.7);
-        --success: #22c55e;
+        --accent: #ec4899;
+        --glass-bg: rgba(15, 23, 42, 0.6);
+        --glass-border: rgba(255, 255, 255, 0.08);
+        --success: #10b981;
         --danger: #ef4444;
       }
 
-      .avatar.muted {
-        opacity: 0.4;
-        filter: grayscale(1);
-        border: 2px dashed rgba(255, 255, 255, 0.3) !important;
-        transform: scale(0.95);
-      }
-
-      .user-card[onclick] {
-        cursor: pointer;
-      }
-
       body {
-        font-family:
-          "Inter",
-          system-ui,
-          -apple-system,
-          sans-serif;
-        background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
+        font-family: "Outfit", sans-serif;
+        background: #0f172a;
         color: white;
         margin: 0;
         display: flex;
@@ -49,188 +39,7 @@
         overflow: hidden;
       }
 
-      .header {
-        padding: 25px;
-        text-align: center;
-        width: 100%;
-        background: rgba(15, 23, 42, 0.8);
-        backdrop-filter: blur(10px);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      }
-
-      h2 {
-        margin: 0;
-        font-size: 1.5rem;
-        background: linear-gradient(to right, #818cf8, #c084fc);
-        background-clip: text;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        letter-spacing: 1px;
-      }
-
-      #user-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-        grid-auto-rows: min-content;
-        gap: 25px;
-        width: 90%;
-        max-width: 500px;
-        padding: 40px 20px;
-        flex-grow: 1;
-        overflow-y: auto;
-        align-content: start;
-      }
-
-      .user-card.active .user-controls-overlay {
-        opacity: 1;
-        pointer-events: auto;
-      }
-
-      .volume-controls {
-        height: 0;
-        overflow: hidden;
-        transition: all 0.3s ease;
-        width: 100%;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        opacity: 0;
-      }
-
-      .user-card.active .volume-controls {
-        height: 40px;
-        margin-top: 5px;
-        opacity: 1;
-      }
-
-      .volume-slider {
-        width: 90px;
-        height: 9px;
-        border-radius: 5px;
-        background: #334155;
-        outline: none;
-        accent-color: var(--primary);
-        -webkit-appearance: none;
-        appearance: none;
-        cursor: pointer;
-      }
-
-      .volume-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        width: 14px;
-        height: 14px;
-        background: white;
-        border-radius: 50%;
-        cursor: pointer;
-      }
-
-      .mute-indicator {
-        font-size: 14px;
-        margin-bottom: 5px;
-      }
-      .user-card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        animation: slideUp 0.4s ease-out;
-        height: min-content;
-        align-self: start;
-      }
-
-      .avatar-container {
-        position: relative;
-        padding: 5px;
-      }
-
-      .avatar {
-        width: 75px;
-        height: 75px;
-        border-radius: 24px;
-        background: var(--card);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 38px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
-      }
-
-      .username {
-        margin-top: 12px;
-        font-size: 13px;
-        font-weight: 500;
-        color: #94a3b8;
-        background: rgba(0, 0, 0, 0.2);
-        padding: 4px 10px;
-        border-radius: 20px;
-        text-align: center;
-      }
-
-      .controls {
-        background: rgba(15, 23, 42, 0.95);
-        padding: 20px 20px 40px 20px;
-        display: flex;
-        justify-content: center;
-        width: 100%;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
-        position: sticky;
-        bottom: 0;
-        box-sizing: border-box;
-      }
-
-      .btn {
-        padding: 16px 40px;
-        border-radius: 16px;
-        border: none;
-        font-size: 16px;
-        font-weight: 700;
-        cursor: pointer;
-        color: white;
-        transition: 0.3s;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        width: 80%;
-        max-width: 300px;
-      }
-
-      .join-btn {
-        background: linear-gradient(135deg, var(--primary), var(--secondary));
-      }
-      .leave-btn {
-        background: #1e293b;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        color: var(--danger);
-        display: none;
-      }
-
-      @keyframes slideUp {
-        from {
-          opacity: 0;
-          transform: translateY(20px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes pulse-green {
-        0% {
-          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
-        }
-        70% {
-          box-shadow: 0 0 0 15px rgba(34, 197, 94, 0);
-        }
-        100% {
-          box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
-        }
-      }
-
-      .speaking {
-        border-color: var(--success) !important;
-        animation: pulse-green 1.5s infinite;
-        transform: scale(1.05);
-      }
+      /* --- VIDEO BACKGROUND --- */
       .video-background {
         position: fixed;
         top: 0;
@@ -239,9 +48,7 @@
         height: 100vh;
         z-index: -2;
         overflow: hidden;
-        background: #0f172a; /* Fallback color */
       }
-
       .video-background video {
         position: absolute;
         top: 50%;
@@ -253,52 +60,289 @@
         height: auto;
         object-fit: cover;
       }
-
       .video-overlay {
         position: absolute;
         top: 0;
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(15, 23, 42, 0.6); /* This darkens the video */
-        z-index: -1; /* Sits on top of video, but under UI */
+        background: rgba(3, 7, 18, 0.5); /* Darker tint for contrast */
+        backdrop-filter: blur(2px);
+        z-index: -1;
       }
 
-      body {
-        background: transparent !important;
+      /* --- MOBILE OVERRIDES --- */
+      @media (max-width: 767px) {
+        .video-background {
+          display: none !important;
+        }
+        body {
+          /* Deep rich gradient for mobile */
+          background: radial-gradient(
+            circle at center,
+            #2e1065,
+            #020617 80%
+          ) !important;
+        }
+      }
+
+      /* --- HEADER --- */
+      .header {
+        margin-top: 20px;
+        padding: 15px 30px;
+        min-width: 250px;
+        text-align: center;
+        background: var(--glass-bg);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border: 1px solid var(--glass-border);
+        border-radius: 50px;
+        box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+        z-index: 10;
+        animation: slideDown 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #a5b4fc, #f0abfc);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+        text-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+      }
+
+      /* --- GRID --- */
+      #user-grid {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 20px;
+        width: 100%;
+        max-width: 800px;
+        padding: 40px 20px;
+        flex-grow: 1;
+        overflow-y: auto;
+        align-content: center; /* Center vertically */
+      }
+
+      /* --- USER CARDS --- */
+      .user-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 24px;
+        padding: 15px;
+        width: 100px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .user-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+        border-color: rgba(255, 255, 255, 0.2);
+      }
+
+      .user-card:active {
+        transform: scale(0.95);
+      }
+
+      .avatar-container {
+        position: relative;
+      }
+
+      .avatar {
+        width: 70px;
+        height: 70px;
+        border-radius: 20px;
+        background: linear-gradient(
+          135deg,
+          rgba(255, 255, 255, 0.1),
+          rgba(255, 255, 255, 0.05)
+        );
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 32px;
+        box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02);
+        transition: 0.3s;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
+
+      .avatar.muted {
+        opacity: 0.5;
+        filter: grayscale(1);
+        box-shadow: none;
+      }
+
+      .username {
+        margin-top: 10px;
+        font-size: 0.85rem;
+        font-weight: 500;
+        color: #e2e8f0;
+        text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      }
+
+      /* --- CONTROLS --- */
+      .controls {
+        width: auto;
+        margin-bottom: 30px;
+        padding: 10px;
+        display: flex;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.3); /* Transparent pill */
+        backdrop-filter: blur(10px);
+        border-radius: 60px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      }
+
+      .btn {
+        padding: 14px 32px;
+        border-radius: 50px;
+        border: none;
+        font-family: "Outfit", sans-serif;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        color: white;
+        transition: 0.3s;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .join-btn {
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+      }
+      .join-btn:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+      }
+
+      .leave-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        color: #fca5a5;
+        display: none;
+      }
+      .leave-btn:hover {
+        background: rgba(239, 68, 68, 0.2);
+        color: white;
+      }
+
+      /* --- ANIMATIONS & INDICATORS --- */
+      @keyframes neonPulse {
+        0% {
+          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+          border-color: #10b981;
+        }
+        70% {
+          box-shadow: 0 0 0 15px rgba(16, 185, 129, 0);
+          border-color: #10b981;
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(16, 185, 129, 0);
+          border-color: rgba(255, 255, 255, 0.1);
+        }
+      }
+
+      .speaking {
+        animation: neonPulse 1.5s infinite;
+        transform: scale(1.05);
+        background: rgba(16, 185, 129, 0.1);
+      }
+
+      @keyframes slideDown {
+        from {
+          transform: translateY(-50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      /* Volume slider styles */
+      .volume-controls {
+        height: 0;
+        overflow: hidden;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        opacity: 0;
+      }
+      .user-card.active .volume-controls {
+        height: 30px;
+        margin-top: 8px;
+        opacity: 1;
+      }
+
+      .volume-slider {
+        width: 80%;
+        height: 4px;
+        border-radius: 2px;
+        background: rgba(255, 255, 255, 0.2);
+        outline: none;
+        -webkit-appearance: none;
+      }
+      .volume-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 12px;
+        height: 12px;
+        background: white;
+        border-radius: 50%;
+        cursor: pointer;
+        box-shadow: 0 0 10px white;
       }
     </style>
   </head>
   <body>
     <div class="video-background">
       <div class="video-overlay"></div>
-      <video autoplay loop muted playsinline>
+      <video loop muted playsinline preload="auto">
         <source
           src="https://us-west-2-epicgames.graphassets.com/cmkr1i7c9047e07n0es5291ez/cmis28lk91sq907mv9aydajlk"
           type="video/mp4"
         />
       </video>
     </div>
+
     <div class="header">
       <h2>LINKICE 🔗</h2>
-      <p
+      <div
         id="status"
         style="
-          margin: 8px 0 0;
-          font-size: 0.85rem;
-          color: #ffffff;
-          font-weight: 500;
+          margin-top: 5px;
+          font-size: 0.8rem;
+          color: #cbd5e1;
+          font-weight: 300;
         "
       >
-        Spremne
-      </p>
+        Spremno
+      </div>
     </div>
 
     <div id="user-grid"></div>
 
     <div class="controls">
-      <button id="join-btn" class="btn join-btn">🍺 Upadni</button>
-      <button id="leave-btn" class="btn leave-btn">Ćaoo drugari 👋👋</button>
+      <button id="join-btn" class="btn join-btn"><span>🚀</span> Upadni</button>
+      <button id="leave-btn" class="btn leave-btn">
+        <span>👋</span> Ćaoo drugaryy
+      </button>
     </div>
 
     <script>
@@ -330,13 +374,9 @@
 
       async function requestWakeLock() {
         try {
-          if ("wakeLock" in navigator) {
+          if ("wakeLock" in navigator)
             wakeLock = await navigator.wakeLock.request("screen");
-            console.log("Ekran ostaje upaljen");
-          }
-        } catch (err) {
-          console.log("Wake Lock nije uspeo:", err.name, err.message);
-        }
+        } catch (err) {}
       }
 
       function sanitizeForAgora(name) {
@@ -351,166 +391,115 @@
           Ž: "Zh",
           đ: "dj",
           Đ: "Dj",
-          dž: "dz",
-          Dž: "Dz",
-          DŽ: "DZ",
         };
-
-        let cleanName = name.replace(
-          /[šćčžđ]|dž/gi,
-          (matched) => map[matched] || map[matched.toLowerCase()],
-        );
-
-        return cleanName
+        return name
+          .replace(/[šćčžđ]/gi, (m) => map[m] || map[m.toLowerCase()])
           .replace(/\s+/g, "")
           .replace(/[^a-zA-Z0-9!#$%&()+-:;<=.>?@[\]^_{|}~,]/g, "");
       }
 
       function getUniqueUsername(baseName) {
-        const randomId = Math.floor(1000 + Math.random() * 9000);
-        return `${baseName}_${randomId}`;
+        return `${baseName}_${Math.floor(1000 + Math.random() * 9000)}`;
       }
-
       function getDisplayName(uid) {
-        if (typeof uid === "string" && uid.includes("_")) {
-          return uid.substring(0, uid.lastIndexOf("_"));
-        }
-        return String(uid);
+        return typeof uid === "string" && uid.includes("_")
+          ? uid.substring(0, uid.lastIndexOf("_"))
+          : String(uid);
       }
 
       function drawUser(uid, username, icon, isMe = false) {
         if (document.getElementById(`user-${uid}`)) return;
-
         const randomIcon =
           icon || animals[Math.floor(Math.random() * animals.length)];
         const grid = document.getElementById("user-grid");
         const card = document.createElement("div");
         card.id = `user-${uid}`;
         card.className = "user-card";
-
-        if (isMe) {
-          card.setAttribute("onclick", "window.toggleMute()");
-        } else {
-          card.setAttribute("onclick", `this.classList.toggle('active')`);
-        }
+        // Click to toggle mute (self) or show volume (others)
+        card.onclick = isMe
+          ? () => window.toggleMute()
+          : (e) => {
+              document.querySelectorAll(".user-card.active").forEach((c) => {
+                if (c !== card) c.classList.remove("active");
+              });
+              card.classList.toggle("active");
+            };
 
         card.innerHTML = `
-                <div class="avatar-container">
-                    <div class="avatar" id="avatar-${uid}">${randomIcon}</div>
-                </div>
-                <div class="username">${username}${isMe ? " (Ti)" : ""}</div>
-                
-                ${
-                  !isMe
-                    ? `
-                <div class="volume-controls" onclick="event.stopPropagation()">
-                    <input type="range" class="volume-slider" min="0" max="100" value="100" 
-                        oninput="window.adjustVolume('${uid}', this.value)">
-                </div>
-                `
-                    : ""
-                }
-            `;
+          <div class="avatar-container"><div class="avatar" id="avatar-${uid}">${randomIcon}</div></div>
+          <div class="username">${username}${isMe ? " (Ti)" : ""}</div>
+          ${
+            !isMe
+              ? `<div class="volume-controls" onclick="event.stopPropagation()">
+            <input type="range" class="volume-slider" min="0" max="100" value="100" oninput="window.adjustVolume('${uid}', this.value)">
+          </div>`
+              : ""
+          }
+        `;
         grid.appendChild(card);
       }
 
       client.on("user-published", async (user, mediaType) => {
         await client.subscribe(user, mediaType);
-
         if (mediaType === "audio") {
           drawUser(user.uid, getDisplayName(user.uid));
-
           user.audioTrack.play();
-
-          const avatar = document.getElementById(`avatar-${user.uid}`);
-          if (avatar) {
-            avatar.classList.remove("muted");
-          }
+          document
+            .getElementById(`avatar-${user.uid}`)
+            ?.classList.remove("muted");
         }
       });
 
       client.on("user-unpublished", (user, mediaType) => {
-        if (mediaType === "audio") {
-          const avatar = document.getElementById(`avatar-${user.uid}`);
-          if (avatar) {
-            avatar.classList.add("muted");
-          }
-        }
+        if (mediaType === "audio")
+          document.getElementById(`avatar-${user.uid}`)?.classList.add("muted");
       });
 
-      client.on("user-left", (user) => {
-        const el = document.getElementById(`user-${user.uid}`);
-        if (el) el.remove();
-      });
-
-      client.on("user-joined", (user) => {
-        drawUser(user.uid, getDisplayName(user.uid));
-      });
-
-      // client.on("connection-state-change", (curState, revState, reason) => {
-      //   console.log("Status veze:", curState);
-      //   if (curState === "DISCONNECTED" && reason === "LEAVE") {
-      //   } else if (curState === "RECONNECTING") {
-      //     document.getElementById("status").innerText = "Povezivanje... 🔄";
-      //   }
-      // });
+      client.on("user-left", (user) =>
+        document.getElementById(`user-${user.uid}`)?.remove(),
+      );
+      client.on("user-joined", (user) =>
+        drawUser(user.uid, getDisplayName(user.uid)),
+      );
 
       client.enableAudioVolumeIndicator();
-
       client.on("volume-indicator", (volumes) => {
-        document.querySelectorAll(".avatar.speaking").forEach((av) => {
-          av.classList.remove("speaking");
+        document
+          .querySelectorAll(".avatar.speaking")
+          .forEach((av) => av.classList.remove("speaking"));
+        volumes.forEach((vol) => {
+          const id = vol.uid === 0 ? client.uid : vol.uid;
+          if (vol.level > 5)
+            document.getElementById(`avatar-${id}`)?.classList.add("speaking");
         });
-
-        volumes.forEach((volume) => {
-          const actualUid = volume.uid === 0 ? client.uid : volume.uid;
-          const avatar = document.getElementById(`avatar-${actualUid}`);
-          if (avatar && volume.level > 3) {
-            avatar.classList.add("speaking");
-          }
-        });
-      });
-
-      document.addEventListener("click", (e) => {
-        if (!e.target.closest(".user-card")) {
-          document
-            .querySelectorAll(".user-card.active")
-            .forEach((c) => c.classList.remove("active"));
-        }
       });
 
       document.getElementById("join-btn").onclick = async () => {
+        const bgVideo = document.querySelector(".video-background video");
+        if (bgVideo && window.innerWidth >= 768) bgVideo.play().catch(() => {});
+
         try {
-          const cleanBaseName = sanitizeForAgora(myUsername);
-
-          const uniqueName = getUniqueUsername(cleanBaseName);
-
+          const uniqueName = getUniqueUsername(sanitizeForAgora(myUsername));
           await client.join(APP_ID, CHANNEL, null, uniqueName);
-
-          client.remoteUsers.forEach((user) => {
-            drawUser(user.uid, getDisplayName(user.uid));
-          });
-
+          client.remoteUsers.forEach((user) =>
+            drawUser(user.uid, getDisplayName(user.uid)),
+          );
           localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
           await client.publish(localTracks.audioTrack);
-
-          drawUser(client.uid, uniqueName, myIcon, true);
+          drawUser(client.uid, getDisplayName(uniqueName), myIcon, true);
           await requestWakeLock();
-
           document.getElementById("join-btn").style.display = "none";
-          document.getElementById("leave-btn").style.display = "block";
-          document.getElementById("status").innerText = "Na vezi 🍻";
-          document.getElementById("status").style.color = "#22c55e";
+          document.getElementById("leave-btn").style.display = "flex"; // Flex ensures icon aligns
+          const s = document.getElementById("status");
+          s.innerText = "Povezan • Live";
+          s.style.color = "#4ade80";
         } catch (e) {
-          alert("Greška! " + (e.message || e));
+          alert("Greška! Proverite mikrofon.");
         }
       };
 
       document.getElementById("leave-btn").onclick = async () => {
-        if (wakeLock !== null) {
-          await wakeLock.release();
-          wakeLock = null;
-        }
+        if (wakeLock) await wakeLock.release();
         if (localTracks.audioTrack) {
           localTracks.audioTrack.stop();
           localTracks.audioTrack.close();
@@ -519,41 +508,25 @@
         location.reload();
       };
 
-      window.onbeforeunload = function () {
-        if (localTracks.audioTrack) {
-          localTracks.audioTrack.stop();
-          localTracks.audioTrack.close();
-        }
-        client.leave();
+      window.adjustVolume = (uid, vol) => {
+        const u = client.remoteUsers.find((u) => u.uid == uid);
+        if (u?.audioTrack) u.audioTrack.setVolume(parseInt(vol));
       };
 
-      window.adjustVolume = function (uid, volume) {
-        const remoteUser = client.remoteUsers.find((u) => u.uid == uid);
-        if (remoteUser && remoteUser.audioTrack) {
-          remoteUser.audioTrack.setVolume(parseInt(volume));
-        }
-      };
-
-      window.toggleMute = async function () {
+      window.toggleMute = async () => {
         if (!localTracks.audioTrack) return;
         isMuted = !isMuted;
-
         await localTracks.audioTrack.setEnabled(!isMuted);
-
-        const myAvatar = document.getElementById(`avatar-${client.uid}`);
-        if (myAvatar) {
-          myAvatar.classList.toggle("muted", isMuted);
-        }
-
-        const statusEl = document.getElementById("status");
-        statusEl.innerText = isMuted ? "Mutiran si 🤐" : "Na vezi 🍻";
-        statusEl.style.color = isMuted ? "#ef4444" : "#22c55e";
+        document
+          .getElementById(`avatar-${client.uid}`)
+          ?.classList.toggle("muted", isMuted);
+        const s = document.getElementById("status");
+        s.innerText = isMuted ? "Mutiran 🤐" : "Povezan • Live";
+        s.style.color = isMuted ? "#f87171" : "#4ade80";
       };
 
-      // --- SPECIAL EFFECTS LOGIC ---
+      // --- PARTICLES ---
       (function () {
-        // if (myUsername !== "Pako" && myUsername !== "Anton") return;
-
         const canvas = document.createElement("canvas");
         Object.assign(canvas.style, {
           position: "fixed",
@@ -565,71 +538,49 @@
           zIndex: "-1",
         });
         document.body.appendChild(canvas);
-
         const ctx = canvas.getContext("2d");
         let particles = [];
-
         const isPako = myUsername === "Pako";
-        const particleCount = isPako ? 150 : 200;
         const symbols = ["❤", "💖", "💕", "💗", "💓"];
-
-        function createParticle() {
-          return {
-            x: Math.random() * canvas.width,
-            y: Math.random() * canvas.height,
-            speed: 0.4 + Math.random() * 0.8, // Slow movement
-            drift: (Math.random() - 0.5) * 0.3, // Slight side-to-side drift
-            size: isPako ? 10 + Math.random() * 15 : 2 + Math.random() * 3,
-            opacity: 0.3 + Math.random() * 0.5,
-            symbol: symbols[Math.floor(Math.random() * symbols.length)],
-          };
-        }
 
         function resize() {
           canvas.width = window.innerWidth;
           canvas.height = window.innerHeight;
-          particles = [];
-          for (let i = 0; i < particleCount; i++) {
-            particles.push(createParticle());
-          }
+          particles = Array.from({ length: isPako ? 100 : 150 }, () => ({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            speed: 0.4 + Math.random() * 0.8,
+            drift: (Math.random() - 0.5) * 0.3,
+            size: isPako ? 10 + Math.random() * 15 : 2 + Math.random() * 3,
+            opacity: 0.3 + Math.random() * 0.5,
+            symbol: symbols[Math.floor(Math.random() * symbols.length)],
+          }));
         }
-
         window.addEventListener("resize", resize);
         resize();
 
         function draw() {
           ctx.clearRect(0, 0, canvas.width, canvas.height);
-
           particles.forEach((p) => {
             ctx.globalAlpha = p.opacity;
-
             if (isPako) {
-              // Draw Heart for Pako
               ctx.font = `${p.size}px serif`;
               ctx.fillText(p.symbol, p.x, p.y);
             } else {
-              // Draw White Dot for Anton
               ctx.fillStyle = "white";
               ctx.beginPath();
               ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
               ctx.fill();
             }
-
             p.y += p.speed;
             p.x += p.drift;
-
-            // Reset when off screen
             if (p.y > canvas.height + 20) {
               p.y = -20;
               p.x = Math.random() * canvas.width;
             }
-            if (p.x > canvas.width) p.x = 0;
-            if (p.x < 0) p.x = canvas.width;
           });
-
           requestAnimationFrame(draw);
         }
-
         draw();
       })();
     </script>
