@@ -10,7 +10,11 @@
 
 body {
   font-family: "Outfit", sans-serif;
-  background: #0f172a;
+  background: radial-gradient(
+      circle at center,
+      #2e1065,
+      #020617 80%
+    ) !important;
   color: white;
   margin: 0;
   display: flex;
@@ -18,6 +22,14 @@ body {
   align-items: center;
   height: 100vh;
   overflow: hidden;
+}
+
+/* --- AUDIO TOGGLE BUTTON --- */
+#audioToggle.playing {
+  color: #ec4899; 
+  background: rgba(236, 72, 153, 0.15);
+  border-color: rgba(236, 72, 153, 0.4);
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.2);
 }
 
 /* --- VIDEO BACKGROUND --- */

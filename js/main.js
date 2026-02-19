@@ -27,7 +27,11 @@ let wakeLock = null;
 const bgVideo = document.getElementById("bgVideo");
 const videoToggle = document.getElementById("videoToggle");
 
-// Logic for the toggle
+const audio = document.getElementById("myAudio");
+const btn = document.getElementById("audioToggle");
+audio.volume = 0.1;
+
+// toggle video background
 videoToggle.onclick = () => {
   if (bgVideo.paused) {
     bgVideo.play();
@@ -35,6 +39,18 @@ videoToggle.onclick = () => {
   } else {
     bgVideo.pause();
     videoToggle.innerText = "🚫";
+  }
+};
+
+btn.onclick = () => {
+  if (audio.paused) {
+    audio.play();
+    btn.innerText = "🔊"; // Ikona kada svira
+    btn.classList.add("playing");
+  } else {
+    audio.pause();
+    btn.innerText = "🎵"; // Ikona kada je stopirano
+    btn.classList.remove("playing");
   }
 };
 
