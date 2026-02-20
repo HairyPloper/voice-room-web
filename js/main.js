@@ -28,8 +28,14 @@ const bgVideo = document.getElementById("bgVideo");
 const videoToggle = document.getElementById("videoToggle");
 
 const audio = document.getElementById("myAudio");
-const btn = document.getElementById("audioToggle");
+const audioBtn = document.getElementById("audioToggle");
 audio.volume = 0.1;
+
+const snowToggle = document.getElementById("snowToggle");
+snowToggle.onclick = () => {
+  document.querySelector("canvas").style.display =
+    document.querySelector("canvas").style.display === "none" ? "block" : "none";
+};
 
 // toggle video background
 videoToggle.onclick = () => {
@@ -42,15 +48,15 @@ videoToggle.onclick = () => {
   }
 };
 
-btn.onclick = () => {
+audioBtn.onclick = () => {
   if (audio.paused) {
     audio.play();
-    btn.innerText = "🔊"; // Ikona kada svira
-    btn.classList.add("playing");
+    audioBtn.innerText = "🔊";
+    audioBtn.classList.add("playing");
   } else {
     audio.pause();
-    btn.innerText = "🎵"; // Ikona kada je stopirano
-    btn.classList.remove("playing");
+    audioBtn.innerText = "🎵";
+    audioBtn.classList.remove("playing");
   }
 };
 
