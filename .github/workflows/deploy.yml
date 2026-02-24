@@ -52,6 +52,12 @@ jobs:
           folder: dist
           branch: gh-pages
           target-folder: ${{ github.ref_name == 'main' && '/' || 'dev' }}
-          clean: true
+          
+          # CHANGE THIS: 
+          # Instead of complex excludes, set clean to false when pushing to dev_b.
+          # This prevents rsync from trying to "verify" the rest of the branch.
+          clean: ${{ github.ref_name == 'main' }} 
+          
+          # Only use exclude when we are cleaning the root (main)
           clean-exclude: |
-            ${{ github.ref_name == 'main' && 'dev' || 'js, css, index.html, src' }}
+            ${{ github.ref_name == 'main' && 'dev' || '' }}
