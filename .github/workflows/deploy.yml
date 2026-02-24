@@ -1,0 +1,41 @@
+name: Optimize and Deploy
+on:
+  push:
+    branches: [ main ] # Runs every time you push to main
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install Minifier
+        run: npm install -g terser
+
+      - name: Merge and Minify JS
+        # This joins files in the CORRECT order and shrinks them into one
+        run: |
+          mkdir -p dist/js
+          cat js/main.js js/utils.js js/ui.js js/rtc.js js/chat.js > dist/combined.js
+          terser dist/combined.js -o dist/js/bundle.min.js --compress --mangle
+          cp index.html dist/index.html
+          cp -r css dist/css || true
+          cp -r src dist/src || true
+
+      - name: Update HTML to use Bundle
+        # This replaces all your separate script tags with just one bundle.min.js
+        run: |
+          sed -i '/<script src="js\/main.js"><\/script>/i <script src="js/bundle.min.js"></script>' dist/index.html
+          sed -i '/js\/.*\.js/d' dist/index.html
+
+      - name: Deploy to GitHub Pages
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist # Deploys the optimized folder
+          branch: gh-pages
