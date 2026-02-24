@@ -950,45 +950,50 @@ if (chatContainer && dragHandle) {
 }
 
 window.askAI = async (prompt) => {
-  const API_KEY = "AIzaSyDfBs1B8K1k6OJPP7YYygwf9qcXBgdy9ns";
-  const URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${API_KEY}`;
+    const API_KEY = "AIzaSyBhO_-rJIcEmqt5ZeEhiYETTXDcOqszi8A";
+    const models = [
+        "gemini-2.5-flash",
+        "gemini-2.0-flash-lite",
+        "gemma-3-4b-it" 
+    ];
 
-  // 1. Prikaži lokalnu poruku korisniku da AI razmišlja
-  const tempId = "ai-loading-" + Date.now();
-  window.appendMessage("🤖 AI Asistent", "Razmišljam...", "#fbbf24", tempId, {
-    username: "🤖 AI Asistent",
-  });
+    window.appendMessage("🤖 AI", "Razmišljam...", "#fbbf24", "temp-ai", { username: "🤖 AI" });
 
-  try {
-    const response = await fetch(URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-      }),
-    });
+    for (let modelName of models) {
+        try {
+            const URL = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${API_KEY}`;
+            
+            const response = await fetch(URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }]
+                })
+            });
 
-    if (!response.ok) throw new Error("API limit ili greška");
+            const data = await response.json();
 
-    const data = await response.json();
-    const aiText = data.candidates[0].content.parts[0].text;
+            if (response.status === 429 || response.status === 404) {
+                console.warn(`Model ${modelName} nije uspeo, pokušavam sledeći...`);
+                continue; 
+            }
 
-    // 2. Obriši "Razmišljam..." poruku (opciono, ili samo pošalji novu)
-    // Šaljemo zvaničan odgovor u Firebase da bi ga SVI u čatu videli
-    chatRef.push({
-      username: "🤖 Gemini AI",
-      text: aiText,
-      color: "#fbbf24",
-      timestamp: Date.now(),
-    });
-  } catch (error) {
-    console.error("AI Error:", error);
-    window.appendMessage(
-      "Sistem",
-      "AI trenutno nije dostupan (proveri API ključ ili limit).",
-      "#ef4444",
-    );
-  }
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                const aiText = data.candidates[0].content.parts[0].text;
+                
+                chatRef.push({
+                    username: `🤖 AI (${modelName})`,
+                    text: aiText,
+                    color: "#fbbf24",
+                    timestamp: Date.now()
+                });
+                return; 
+            }
+        } catch (err) {
+            console.error("Greška sa modelom " + modelName, err);
+        }
+    }
+    window.appendMessage("Sistem", "Svi AI modeli su trenutno zauzeti. Pokušaj kasnije.", "#ef4444");
 };
 
 window.appendSystemHTML = (htmlContent) => {
