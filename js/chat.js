@@ -251,10 +251,14 @@ function handleCommand(text) {
       if (!prompt) {
         window.appendMessage(
           "Sistem",
-          "Upišite pitanje, npr: /ai Koliko je 2+2?",
+          "Format: /ai Koliko je 2+2?",
           "#ef4444",
         );
       } else {
+      //   chatRef.push({
+      //   username: "Sistem",
+      //   text: `${window.myUsername} pita: ${prompt}`
+      // });
         window.askAI(prompt);
       }
       return true;
@@ -622,7 +626,7 @@ window.askAI = async (prompt) => {
 
         chatRef.push({
           username: `🤖 AI (${modelName})`,
-          text: aiText,
+          text: `Pitanje: ${prompt}\nOdgovor: ${aiText}`,
           color: "#fbbf24",
           timestamp: Date.now(),
         });
