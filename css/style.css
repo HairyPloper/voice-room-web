@@ -163,6 +163,7 @@ h2 {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif
 }
 
 /* --- LIFELINE ANIMATION --- */
@@ -296,9 +297,9 @@ h2 {
   padding: 14px 32px;
   border-radius: 50px;
   border: none;
-  font-family: "Outfit", sans-serif;
+  font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: 16px;
-  font-weight: 600;
+  font-weight: initial;
   cursor: pointer;
   color: white;
   transition: 0.3s;
