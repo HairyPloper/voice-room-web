@@ -66,11 +66,12 @@ body {
 
 /* --- VIDEO TOGGLE BUTTON --- */
 .video-toggle {
-  position: fixed;
-  bottom: 15px;
-  right: 15px;
-  width: 35px;
-  height: 35px;
+  /* position: fixed; */
+  /* bottom: 15px; */
+  /* right: 15px; */
+  width: 30px;
+  margin-left: 10px;
+  height: 30px;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -143,7 +144,7 @@ body {
 .header {
   margin-top: 20px;
   padding: 15px 30px;
-  min-width: 250px;
+  min-width: 300px;
   text-align: center;
   background: var(--glass-bg);
   backdrop-filter: blur(12px);
@@ -157,12 +158,12 @@ body {
 
 h2 {
   margin: 0;
-  font-size: 1.8rem;
+  /* font-size: 1.8rem; */
   font-weight: 700;
   background: linear-gradient(135deg, #a5b4fc, #f0abfc);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  letter-spacing: -0.5px;
+  /* letter-spacing: -0.5px; */
   text-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
 }
 
@@ -560,7 +561,7 @@ h2 {
     right: 10px !important;
     bottom: 150px !important; /* Adjust based on controls height + margin */
     width: auto !important;
-    height: auto !important;
+    /* height: auto !important; */
     max-height: calc(100vh - 240px) !important; /* Full height minus header and controls */
     z-index: 999 !important;
   }
@@ -851,6 +852,7 @@ h2 {
   #chat-container.collapsed #chat-messages,
   #chat-container.collapsed .chat-input-wrapper {
     display: none !important;
+    /* transition: all 0.3s ease !important; */
   }
   #chat-container.collapsed {
     height: auto !important;
