@@ -385,6 +385,10 @@ if (joinBtn) joinBtn.onclick = async () => {
     if (screenBtn) screenBtn.style.display = "flex";
     const s = document.getElementById("status");
     if (s) { s.innerText = "Povezan • Live"; s.style.color = "#4ade80"; }
+
+    if (window.innerWidth < 768) {
+       window.chatContainer.classList.add('collapsed');
+    }
   } catch (e) {
     console.error(e); btn.disabled = false;
   }
@@ -428,6 +432,9 @@ const emojiBtn = document.getElementById("emoji-btn");
 const emojiPicker = document.getElementById("emoji-picker");
 const chatContainer = document.getElementById("chat-container");
 const dragHandle = document.getElementById("chat-drag-handle");
+
+// Make chatContainer global for other scripts
+window.chatContainer = chatContainer;
 
 let selectedIndex = 0;
 
@@ -999,12 +1006,15 @@ if (chatContainer && dragHandle) {
   let x = 0,
     y = 0,
     initialX = 0,
-    initialY = 0;
+    initialY = 0,
+    isDragging = false;
   dragHandle.onmousedown = (e) => {
     if (e.button !== 0) return;
+    isDragging = false;
     initialX = e.clientX;
     initialY = e.clientY;
     document.onmousemove = (e) => {
+      isDragging = true;
       x = initialX - e.clientX;
       y = initialY - e.clientY;
       initialX = e.clientX;
@@ -1017,6 +1027,12 @@ if (chatContainer && dragHandle) {
     document.onmouseup = () => {
       document.onmousemove = null;
     };
+  };
+  // Toggle collapse on click (only if not dragged)
+  dragHandle.onclick = () => {
+    if (!isDragging) {
+      chatContainer.classList.toggle('collapsed');
+    }
   };
 }
 
