@@ -481,11 +481,12 @@ window.adjustVolume = (uid, vol) => {
 // Silent login for security rules
 firebase.auth().onAuthStateChanged((user) => {
   if (!user) {
-    firebase.auth().signInAnonymously()
+    firebase
+      .auth()
+      .signInAnonymously()
       .catch((error) => console.error("Auth Error:", error.message));
   }
 });
-const chatRef = firebase.database().ref(`messages/${window.CHANNEL}`);
 const chatInput = document.getElementById("chat-input");
 const chatMessages = document.getElementById("chat-messages");
 const autoMenu = document.getElementById("autocomplete-menu");
@@ -504,15 +505,15 @@ window.chatContainer = chatContainer;
 
 let selectedIndex = 0;
 
-function escapeHtml(str) {
-  if (str === null || typeof str === "undefined") return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/\"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
+// 2. Only start the chat once Auth is confirmed
+firebase.auth().onAuthStateChanged((user) => {
+  if (user) {
+    console.log("Authenticated! Starting chat...");
+    startChat();
+  } else {
+    firebase.auth().signInAnonymously();
+  }
+});
 
 // Show skeleton immediately on load
 // TODO: Handle case where user has no messages and skeleton stays forever (maybe add timeout to remove it after 5s or so)
@@ -566,6 +567,16 @@ window.appendMessage = (
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }, 200);
 };
+
+function escapeHtml(str) {
+  if (str === null || typeof str === "undefined") return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/\"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
 
 function renderStandardMessage(msgDiv, name, text, color, timeString) {
   const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -719,7 +730,7 @@ window.sendMessage = async () => {
   }
 
   try {
-    await chatRef.push({
+    await  window.chatRef.push({
       username: window.myUsername,
       text: text,
       color: window.myColor || "#4ade80",
@@ -756,7 +767,7 @@ function handleCommand(text) {
       return true;
     case "/roll":
       const max = parseInt(args[1]) || 100;
-      chatRef.push({
+       window.chatRef.push({
         username: "Sistem",
         text: `🎲 **${window.myUsername}** rola: **${Math.floor(Math.random() * max) + 1}** (1-${max})`,
       });
@@ -791,7 +802,7 @@ function handleCommand(text) {
       const pollVotes = {};
       options.forEach((opt) => (pollVotes[opt] = 0));
 
-      chatRef.push({
+       window.chatRef.push({
         username: window.myUsername,
         type: "poll",
         question: question,
@@ -821,7 +832,7 @@ function handleCommand(text) {
       const target = args[1];
       const privateMsg = args.slice(2).join(" ");
       if (target && privateMsg) {
-        chatRef.push({
+        window.chatRef.push({
           username: window.myUsername,
           text: privateMsg,
           to: target,
@@ -858,54 +869,61 @@ function handleCommand(text) {
 }
 
 // --- FIREBASE LISTENERS (POPRAVLJENI) ---
+function startChat() {
+  const chatRef = firebase.database().ref(`messages/${window.CHANNEL}`);
 
-// Slušaj nove poruke
-chatRef.limitToLast(50).on("child_added", (snapshot) => {
-  const skeleton = document.getElementById("chat-skeleton-loader");
-  if (skeleton) {
-    skeleton.remove();
-  }
-  const data = snapshot.val();
-  const key = snapshot.key;
-
-  // Privatne poruke
-  if (data.type === "private") {
-    const isMeSender =
-      (data.username || "").toLowerCase() ===
-      (window.myUsername || "").toLowerCase();
-    const isMeTarget =
-      (data.to || "").toLowerCase() === (window.myUsername || "").toLowerCase();
-    if (isMeSender || isMeTarget) {
-      const prefix = isMeSender
-        ? `[privatna za ${escapeHtml(data.to || "")}]`
-        : `[Privatna od ${escapeHtml(data.username || "")}]`;
-      window.appendMessage(prefix, data.text, "#d1d5db", key, data);
+  // Slušaj nove poruke
+  chatRef.limitToLast(50).on("child_added", (snapshot) => {
+    const skeleton = document.getElementById("chat-skeleton-loader");
+    if (skeleton) {
+      skeleton.remove();
     }
-    return;
-  }
+    const data = snapshot.val();
+    const key = snapshot.key;
 
-  // Obične poruke i ankete
-  window.appendMessage(
-    data.username,
-    data.text,
-    data.color || "#4ade80",
-    key,
-    data,
-  );
-});
+    // Privatne poruke
+    if (data.type === "private") {
+      const isMeSender =
+        (data.username || "").toLowerCase() ===
+        (window.myUsername || "").toLowerCase();
+      const isMeTarget =
+        (data.to || "").toLowerCase() ===
+        (window.myUsername || "").toLowerCase();
+      if (isMeSender || isMeTarget) {
+        const prefix = isMeSender
+          ? `[privatna za ${escapeHtml(data.to || "")}]`
+          : `[Privatna od ${escapeHtml(data.username || "")}]`;
+        window.appendMessage(prefix, data.text, "#d1d5db", key, data);
+      }
+      return;
+    }
 
-// Slušaj promene (za glasanje u realnom vremenu)
-chatRef.on("child_changed", (snapshot) => {
-  const data = snapshot.val();
-  if (data && data.type === "poll" && Array.isArray(data.options)) {
-    data.options.forEach((opt) => {
-      const el = document.getElementById(
-        `count-${snapshot.key}-${encodeURIComponent(opt)}`,
-      );
-      if (el) el.innerText = data.votes && (data.votes[opt] || 0);
-    });
-  }
-});
+    // Obične poruke i ankete
+    window.appendMessage(
+      data.username,
+      data.text,
+      data.color || "#4ade80",
+      key,
+      data,
+    );
+  });
+
+  // Slušaj promene (za glasanje u realnom vremenu)
+  chatRef.on("child_changed", (snapshot) => {
+    const data = snapshot.val();
+    if (data && data.type === "poll" && Array.isArray(data.options)) {
+      data.options.forEach((opt) => {
+        const el = document.getElementById(
+          `count-${snapshot.key}-${encodeURIComponent(opt)}`,
+        );
+        if (el) el.innerText = data.votes && (data.votes[opt] || 0);
+      });
+    }
+  });
+
+  // Make chatRef global if your other functions (like sendMessage) need it
+  window.chatRef = chatRef;
+}
 
 // --- GLASANJE ---
 window.vote = (pollId, option) => {
@@ -916,7 +934,7 @@ window.vote = (pollId, option) => {
   }
 
   const safeOptionKey = encodeURIComponent(option);
-  const pollRef = chatRef.child(`${pollId}/votes/${safeOptionKey}`);
+  const pollRef =  window.chatRef.child(`${pollId}/votes/${safeOptionKey}`);
   pollRef.transaction((currentVotes) => {
     return (currentVotes || 0) + 1;
   });
@@ -943,7 +961,10 @@ async function uploadFile(file, expiry) {
   } catch (e) {
     console.error("Direktan upload nije uspeo, pokušavam preko proxy-ja...", e);
     try {
-      const proxyRes = await fetch("https://corsproxy.io/?" + apiUrl, { method: "POST", body: formData });
+      const proxyRes = await fetch("https://corsproxy.io/?" + apiUrl, {
+        method: "POST",
+        body: formData,
+      });
       return (await proxyRes.text()).trim();
     } catch (err) {
       return null;
@@ -959,7 +980,7 @@ async function handleFileUpload(file) {
   const fileUrl = await uploadFile(file, expiry);
 
   if (fileUrl && fileUrl.startsWith("http")) {
-    chatRef.push({
+     window.chatRef.push({
       username: window.myUsername,
       text: `Dostupno ${expiry}: ${fileUrl}`,
       color: window.myColor || "#ffffff",
@@ -1159,7 +1180,7 @@ window.askAI = async (prompt) => {
       if (data.candidates && data.candidates[0].content.parts[0].text) {
         const aiText = data.candidates[0].content.parts[0].text;
 
-        chatRef.push({
+         window.chatRef.push({
           username: `🤖 Bot (${modelName})`,
           text: `${window.myUsername} pita: ${prompt}\nOdgovor: ${aiText}`,
           color: "#fbbf24",
