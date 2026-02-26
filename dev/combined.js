@@ -477,16 +477,6 @@ window.adjustVolume = (uid, vol) => {
 };/**
  * js/chat.js - Logika za poruke, komande i autocomplete
  */
-
-// Silent login for security rules
-firebase.auth().onAuthStateChanged((user) => {
-  if (!user) {
-    firebase
-      .auth()
-      .signInAnonymously()
-      .catch((error) => console.error("Auth Error:", error.message));
-  }
-});
 const chatInput = document.getElementById("chat-input");
 const chatMessages = document.getElementById("chat-messages");
 const autoMenu = document.getElementById("autocomplete-menu");
@@ -505,11 +495,16 @@ window.chatContainer = chatContainer;
 
 let selectedIndex = 0;
 
-// 2. Only start the chat once Auth is confirmed
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
     console.log("Authenticated! Starting chat...");
     startChat();
+
+    // Safety timeout: remove skeleton after 5 seconds if no messages arrive
+    setTimeout(() => {
+      const skeleton = document.getElementById("chat-skeleton-loader");
+      if (skeleton) skeleton.remove();
+    }, 5000);
   } else {
     firebase.auth().signInAnonymously();
   }
@@ -722,7 +717,8 @@ function renderPoll(msgDiv, snapshotKey, data, color, timeString) {
 // --- SLANJE PORUKA ---
 window.sendMessage = async () => {
   const text = (chatInput && chatInput.value ? chatInput.value : "").trim();
-  if (!text) return;
+
+  if (!text || !window.chatRef) return;
 
   if (handleCommand(text)) {
     chatInput.value = "";
@@ -730,7 +726,7 @@ window.sendMessage = async () => {
   }
 
   try {
-    await  window.chatRef.push({
+    await window.chatRef.push({
       username: window.myUsername,
       text: text,
       color: window.myColor || "#4ade80",
@@ -767,7 +763,7 @@ function handleCommand(text) {
       return true;
     case "/roll":
       const max = parseInt(args[1]) || 100;
-       window.chatRef.push({
+      window.chatRef.push({
         username: "Sistem",
         text: `🎲 **${window.myUsername}** rola: **${Math.floor(Math.random() * max) + 1}** (1-${max})`,
       });
@@ -802,7 +798,7 @@ function handleCommand(text) {
       const pollVotes = {};
       options.forEach((opt) => (pollVotes[opt] = 0));
 
-       window.chatRef.push({
+      window.chatRef.push({
         username: window.myUsername,
         type: "poll",
         question: question,
@@ -870,10 +866,10 @@ function handleCommand(text) {
 
 // --- FIREBASE LISTENERS (POPRAVLJENI) ---
 function startChat() {
-  const chatRef = firebase.database().ref(`messages/${window.CHANNEL}`);
+  window.chatRef = firebase.database().ref(`messages/${window.CHANNEL}`);
 
   // Slušaj nove poruke
-  chatRef.limitToLast(50).on("child_added", (snapshot) => {
+  window.chatRef.limitToLast(50).on("child_added", (snapshot) => {
     const skeleton = document.getElementById("chat-skeleton-loader");
     if (skeleton) {
       skeleton.remove();
@@ -909,7 +905,7 @@ function startChat() {
   });
 
   // Slušaj promene (za glasanje u realnom vremenu)
-  chatRef.on("child_changed", (snapshot) => {
+  window.chatRef.on("child_changed", (snapshot) => {
     const data = snapshot.val();
     if (data && data.type === "poll" && Array.isArray(data.options)) {
       data.options.forEach((opt) => {
@@ -920,9 +916,6 @@ function startChat() {
       });
     }
   });
-
-  // Make chatRef global if your other functions (like sendMessage) need it
-  window.chatRef = chatRef;
 }
 
 // --- GLASANJE ---
@@ -934,7 +927,7 @@ window.vote = (pollId, option) => {
   }
 
   const safeOptionKey = encodeURIComponent(option);
-  const pollRef =  window.chatRef.child(`${pollId}/votes/${safeOptionKey}`);
+  const pollRef = window.chatRef.child(`${pollId}/votes/${safeOptionKey}`);
   pollRef.transaction((currentVotes) => {
     return (currentVotes || 0) + 1;
   });
@@ -980,7 +973,7 @@ async function handleFileUpload(file) {
   const fileUrl = await uploadFile(file, expiry);
 
   if (fileUrl && fileUrl.startsWith("http")) {
-     window.chatRef.push({
+    window.chatRef.push({
       username: window.myUsername,
       text: `Dostupno ${expiry}: ${fileUrl}`,
       color: window.myColor || "#ffffff",
@@ -1180,7 +1173,7 @@ window.askAI = async (prompt) => {
       if (data.candidates && data.candidates[0].content.parts[0].text) {
         const aiText = data.candidates[0].content.parts[0].text;
 
-         window.chatRef.push({
+        window.chatRef.push({
           username: `🤖 Bot (${modelName})`,
           text: `${window.myUsername} pita: ${prompt}\nOdgovor: ${aiText}`,
           color: "#fbbf24",
