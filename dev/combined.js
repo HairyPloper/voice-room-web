@@ -487,6 +487,8 @@ const emojiBtn = document.getElementById("emoji-btn");
 const emojiPicker = document.getElementById("emoji-picker");
 const chatContainer = document.getElementById("chat-container");
 const dragHandle = document.getElementById("chat-drag-handle");
+const uploadBtn = document.getElementById("upload-btn");
+const fileInput = document.getElementById("file-input");
 
 // Make chatContainer global for other scripts
 window.chatContainer = chatContainer;
@@ -501,6 +503,19 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/\"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+// Show skeleton immediately on load
+// TODO: Handle case where user has no messages and skeleton stays forever (maybe add timeout to remove it after 5s or so)
+if (chatMessages) {
+  chatMessages.innerHTML = `
+    <div id="chat-skeleton-loader" class="chat-loading-skeleton">
+      <div class="skeleton-bubble med"></div>
+      <div class="skeleton-bubble long"></div>
+      <div class="skeleton-bubble short"></div>
+      <div class="skeleton-bubble med"></div>
+    </div>
+  `;
 }
 
 // --- FUNKCIJA ZA PRIKAZ PORUKA ---
@@ -549,19 +564,19 @@ function renderStandardMessage(msgDiv, name, text, color, timeString) {
 
   let formattedText;
   if (name.includes("🤖 Bot")) {
-    const parts = safeText.split('\n');
+    const parts = safeText.split("\n");
     if (parts.length >= 2) {
       const questionPart = parts[0];
-      const answerPart = parts.slice(1).join('\n'); // In case there are more lines
+      const answerPart = parts.slice(1).join("\n"); // In case there are more lines
       formattedText = `<div style="color: #fbbf24; margin-bottom: 5px;">${questionPart}</div><div style="color: #ffffff;">${answerPart}</div>`;
     } else {
-      formattedText = safeText.replace(urlRegex, (url) => formatMediaLinks(url));
+      formattedText = safeText.replace(urlRegex, (url) =>
+        formatMediaLinks(url),
+      );
     }
   } else {
     // Zamena linkova medijima
-    formattedText = safeText.replace(urlRegex, (url) =>
-      formatMediaLinks(url),
-    );
+    formattedText = safeText.replace(urlRegex, (url) => formatMediaLinks(url));
   }
 
   msgDiv.innerHTML = `${timeString}<b style="color: ${color}">${escapeHtml(name)}: </b><span>${formattedText}</span>`;
@@ -837,6 +852,10 @@ function handleCommand(text) {
 
 // Slušaj nove poruke
 chatRef.limitToLast(50).on("child_added", (snapshot) => {
+  const skeleton = document.getElementById("chat-skeleton-loader");
+  if (skeleton) {
+    skeleton.remove();
+  }
   const data = snapshot.val();
   const key = snapshot.key;
 
@@ -897,7 +916,6 @@ window.vote = (pollId, option) => {
 };
 
 // --- OSTALO (Upload, Emoji, Autocomplete) ---
-
 async function uploadFile(file) {
   const formData = new FormData();
   formData.append("reqtype", "fileupload");
@@ -1022,6 +1040,19 @@ if (chatInput) {
     }
   };
 }
+// --- UPLOAD BUTTON FILE ---
+if (uploadBtn && fileInput) {
+  uploadBtn.onclick = () => fileInput.click();
+
+  fileInput.onchange = (e) => {
+    const selectedFile = e.target.files[0];
+
+    if (selectedFile) {
+      window.handleFileUpload(selectedFile);
+      fileInput.value = "";
+    }
+  };
+}
 
 window.applyCommand = (cmd) => {
   chatInput.value = cmd + " ";
@@ -1082,7 +1113,7 @@ if (chatContainer && dragHandle) {
   // Toggle collapse on click (only if not dragged)
   dragHandle.onclick = () => {
     if (!isDragging) {
-      chatContainer.classList.toggle('collapsed');
+      chatContainer.classList.toggle("collapsed");
     }
   };
 }
