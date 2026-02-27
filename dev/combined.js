@@ -18,8 +18,21 @@ window.APP_ID = "beb2d2e844954540847d8bf07648926e";
 // e.g. ?name=Marko  →  "Marko_4271"
 // ============================================================
 const params   = new URLSearchParams(window.location.search);
-let   baseName = params.get("name") || "Gost";
-window.myUsername = `${baseName}_${Math.floor(10000 + Math.random() * 9000)}`;
+const queryName     = params.get("name");
+const savedUsername = localStorage.getItem("savedUsername");
+// Separate numeric ID purely for Agora — never exposed to users
+window.myAgoraUID = Math.floor(100000 + Math.random() * 900000);
+// Display name priority: URL param → saved → random guest
+if (queryName) {
+  window.myDisplayName = queryName;
+  localStorage.setItem("savedUsername", queryName);
+} else if (savedUsername) {
+  window.myDisplayName = savedUsername;
+} else {
+  window.myDisplayName = `Gost_${Math.floor(10000 + Math.random() * 9000)}`;
+  localStorage.setItem("savedUsername", window.myDisplayName);
+}
+
 
 // ============================================================
 // WAKE LOCK
@@ -77,10 +90,9 @@ window.sanitizeForAgora = (name) => {
 // Falls back to a plain string conversion for numeric UIDs (remote users).
 // e.g. "Marko_4271" → "Marko"  |  12345678 → "12345678"
 // ============================================================
+window.uidNameMap = {};
 window.getDisplayName = (uid) => {
-  return typeof uid === "string" && uid.includes("_")
-    ? uid.substring(0, uid.lastIndexOf("_")) // Everything before the last underscore
-    : String(uid);                            // Numeric UID — just stringify it
+  return window.uidNameMap[uid] || String(uid);
 };
 
 // ============================================================
@@ -222,9 +234,7 @@ window.drawUser = (uid, username, icon, isMe = false) => {
   if (document.getElementById(`user-${uid}`)) return; // Guard: no duplicate cards
 
   // Local user keeps their pre-assigned icon; remote users get a random animal
-  const displayIcon = isMe
-    ? icon
-    : window.animals[Math.floor(Math.random() * window.animals.length)];
+const displayIcon = icon || window.animals[Math.floor(Math.random() * window.animals.length)];
 
   const grid = document.getElementById("user-grid");
   if (!grid) return;
@@ -347,7 +357,7 @@ window.removeVideoFromCard = (uid) => {
   window.isSnowing = true;
 
   // Easter egg: users whose name starts with "Pako" get red hearts instead of snowflakes
-  const isPako = window.myUsername?.startsWith("Pako");
+  const isPako = window.myDisplayName?.startsWith("Pako"); // ✅
 
   // ---- Particle factory ----
   // yPos lets us distribute particles across the full height on init,
@@ -542,8 +552,14 @@ window.client.on("user-published", async (user, mediaType) => {
   await window.client.subscribe(user, mediaType);
 
   if (mediaType === "audio") {
-    window.drawUser(user.uid, window.getDisplayName(user.uid));
-    user.audioTrack.play(); // Play directly through the browser's audio output
+    firebase.database()
+      .ref(`presence/${window.CHANNEL}/${user.uid}`)
+      .once("value", (snap) => {
+        const data = snap.val();
+        const icon = data?.icon || null;
+        window.drawUser(user.uid, window.getDisplayName(user.uid), icon);
+        user.audioTrack.play();
+      });
   }
 
   if (mediaType === "video") {
@@ -570,12 +586,18 @@ window.client.on("user-left", (user) => {
  * Draws their card and plays a higher tone to signal arrival.
  */
 window.client.on("user-joined", (user) => {
-  window.drawUser(user.uid, window.getDisplayName(user.uid));
-  if (window.appendMessage)
-    window.appendMessage("Sistem", `**${window.getDisplayName(user.uid)}** se priključio.`, "#ffcc00");
-
-  // Don't play the join tone for the local user's own echo
-  if (user.uid !== window.client.uid) window._playTone(660, 0.1); // Higher tone = arrival
+  firebase.database()
+    .ref(`presence/${window.CHANNEL}/${user.uid}`)
+    .once("value", (snap) => {
+      const data = snap.val();
+      const name = data?.displayName || String(user.uid);
+      const icon = data?.icon || window.animals[Math.floor(Math.random() * window.animals.length)];
+      window.uidNameMap[user.uid] = name;
+      window.drawUser(user.uid, name, icon);
+      if (window.appendMessage)
+        window.appendMessage("Sistem", `**${name}** se priključio.`, "#ffcc00");
+      if (user.uid !== window.client.uid) window._playTone(660, 0.1);
+    });
 });
 
 /**
@@ -608,20 +630,24 @@ if (joinBtn) joinBtn.onclick = async () => {
   btn.disabled = true; // Prevent double-clicks during the async join flow
 
   try {
-    // Agora UIDs must be numeric or a sanitised string — strip special chars
-    const cleanName = window.sanitizeForAgora(window.myUsername);
-    await window.client.join(window.APP_ID, window.CHANNEL, null, cleanName);
+    await window.client.join(window.APP_ID, window.CHANNEL, null, window.myAgoraUID);
     window.client.enableAudioVolumeIndicator();
 
-    if (window.appendMessage)
-      window.appendMessage("Sistem", `Povezan **${cleanName}**`, "#ffcc00");
+if (window.appendMessage)
+      window.appendMessage("Sistem", `Povezan **${window.myDisplayName}**`, "#ffcc00");
+
+    // Write presence so users already in the room can resolve your name
+    window.uidNameMap[window.client.uid] = window.myDisplayName;
+    firebase.database()
+      .ref(`presence/${window.CHANNEL}/${window.client.uid}`)
+      .set({ displayName: window.myDisplayName, icon: window.myIcon });
 
     // Capture and publish the local microphone
     localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
     await window.client.publish(localTracks.audioTrack);
 
     // Render the local user's card (isLocal = true so it gets special styling)
-    window.drawUser(window.client.uid, window.getDisplayName(cleanName), window.myIcon, true);
+    window.drawUser(window.client.uid, window.myDisplayName, window.myIcon, true);
 
     // Prevent screen sleep during a call (mobile-friendly)
     window.requestWakeLock();
@@ -670,6 +696,9 @@ async function leaveChannel() {
   }
 
   // --- 4. AGORA CLIENT ---
+  firebase.database()
+  .ref(`presence/${window.CHANNEL}/${window.client.uid}`)
+  .remove();
   await window.client.leave();
 
   // --- 5. RESET LOCAL STATE ---
@@ -852,7 +881,7 @@ window.appendMessage = (
   msgDiv.className = "chat-msg";
 
   // Align own messages to the right and tint them green
-  const isMe = data && data.username === window.myUsername;
+  const isMe = data && data.username === window.myDisplayName;
   msgDiv.style.alignSelf = isMe ? "flex-end" : "flex-start";
   if (isMe) msgDiv.style.backgroundColor = "rgba(74, 222, 128, 0.1)";
 
@@ -1052,7 +1081,7 @@ window.sendMessage = async () => {
   // Push regular message to Firebase Realtime Database
   try {
     await window.chatRef.push({
-      username:  window.myUsername,
+      username: window.myDisplayName,
       text:      text,
       color:     window.myColor || "#4ade80",
       timestamp: Date.now(),
@@ -1086,8 +1115,21 @@ function handleCommand(text) {
     case "/nick":
       const newNick = args.slice(1).join(" ");
       if (newNick) {
-        window.myUsername = newNick;
-        window.appendMessage("Sistem", `Nadimak promenjen u: **${window.myUsername}**`, "#ffcc00");
+        window.myDisplayName = newNick;
+        localStorage.setItem("savedUsername", newNick);
+
+        // Update presence so other users see the new name immediately
+        if (window.client?.uid) {
+          firebase.database()
+            .ref(`presence/${window.CHANNEL}/${window.client.uid}/displayName`)
+            .set(newNick);
+        }
+
+        // Update own card in the grid
+        const nameEl = document.querySelector(`#user-${window.client?.uid} .username`);
+        if (nameEl) nameEl.textContent = `${newNick} (Ti)`;
+
+        window.appendMessage("Sistem", `Nadimak promenjen u: **${newNick}**`, "#ffcc00");
       }
       return true;
 
@@ -1096,7 +1138,7 @@ function handleCommand(text) {
       const max = parseInt(args[1]) || 100;
       window.chatRef.push({
         username: "Sistem",
-        text: `🎲 **${window.myUsername}** rola: **${Math.floor(Math.random() * max) + 1}** (1-${max})`,
+        text: `🎲 **${window.myDisplayName}** rola: **${Math.floor(Math.random() * max) + 1}** (1-${max})`,
       });
       return true;
 
@@ -1123,7 +1165,7 @@ function handleCommand(text) {
       options.forEach((opt) => (pollVotes[opt] = 0));
 
       window.chatRef.push({
-        username:  window.myUsername,
+        username:  window.myDisplayName,
         type:      "poll",
         question:  question,
         options:   options,
@@ -1149,7 +1191,7 @@ function handleCommand(text) {
       const privateMsg = args.slice(2).join(" ");
       if (target && privateMsg) {
         window.chatRef.push({
-          username:  window.myUsername,
+          username:  window.myDisplayName,
           text:      privateMsg,
           to:        target,
           type:      "private",
@@ -1204,8 +1246,8 @@ function startChat() {
 
     // Private messages are only shown to the sender and the named recipient
     if (data.type === "private") {
-      const isMeSender = (data.username || "").toLowerCase() === (window.myUsername || "").toLowerCase();
-      const isMeTarget = (data.to || "").toLowerCase()       === (window.myUsername || "").toLowerCase();
+      const isMeSender = (data.username || "").toLowerCase() === (window.myDisplayName  || "").toLowerCase();
+      const isMeTarget = (data.to || "").toLowerCase()       === (window.myDisplayName  || "").toLowerCase();
 
       if (isMeSender || isMeTarget) {
         const prefix = isMeSender
@@ -1300,7 +1342,7 @@ window.handleFileUpload = async (file) => {
   if (fileUrl && fileUrl.startsWith("http")) {
     // Post the URL to chat — the media formatter will embed it appropriately
     window.chatRef.push({
-      username:  window.myUsername,
+      username:  window.myDisplayName,
       text:      `Dostupno ${expiry}: ${fileUrl}`,
       color:     window.myColor || "#ffffff",
       timestamp: Date.now(),
@@ -1555,7 +1597,7 @@ window.askAI = async (prompt) => {
         // Push the answer to Firebase so all users see the bot response
         window.chatRef.push({
           username:  `🤖 Bot (${modelName})`,
-          text:      `${window.myUsername} pita: ${prompt}\nOdgovor: ${aiText}`,
+          text:      `${window.myDisplayName} pita: ${prompt}\nOdgovor: ${aiText}`,
           color:     "#fbbf24",
           timestamp: Date.now(),
         });
