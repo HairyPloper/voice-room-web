@@ -1140,7 +1140,11 @@ window.sendMessage = async () => {
   }
 };
 
-if (sendBtn) sendBtn.onclick = window.sendMessage;
+if (sendBtn) sendBtn.onclick = (e) => {
+  e.preventDefault(); // Prevent button from stealing focus
+  chatInput.focus();  // Refocus immediately inside the click gesture
+  window.sendMessage();
+};
 
 // ============================================================
 // SLASH COMMAND HANDLER
