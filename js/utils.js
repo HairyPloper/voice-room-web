@@ -34,10 +34,9 @@ window.sanitizeForAgora = (name) => {
 // Falls back to a plain string conversion for numeric UIDs (remote users).
 // e.g. "Marko_4271" → "Marko"  |  12345678 → "12345678"
 // ============================================================
+window.uidNameMap = {};
 window.getDisplayName = (uid) => {
-  return typeof uid === "string" && uid.includes("_")
-    ? uid.substring(0, uid.lastIndexOf("_")) // Everything before the last underscore
-    : String(uid);                            // Numeric UID — just stringify it
+  return window.uidNameMap[uid] || String(uid);
 };
 
 // ============================================================

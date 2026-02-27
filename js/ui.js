@@ -79,9 +79,7 @@ window.drawUser = (uid, username, icon, isMe = false) => {
   if (document.getElementById(`user-${uid}`)) return; // Guard: no duplicate cards
 
   // Local user keeps their pre-assigned icon; remote users get a random animal
-  const displayIcon = isMe
-    ? icon
-    : window.animals[Math.floor(Math.random() * window.animals.length)];
+const displayIcon = icon || window.animals[Math.floor(Math.random() * window.animals.length)];
 
   const grid = document.getElementById("user-grid");
   if (!grid) return;
@@ -204,7 +202,7 @@ window.removeVideoFromCard = (uid) => {
   window.isSnowing = true;
 
   // Easter egg: users whose name starts with "Pako" get red hearts instead of snowflakes
-  const isPako = window.myUsername?.startsWith("Pako");
+  const isPako = window.myDisplayName?.startsWith("Pako"); // ✅
 
   // ---- Particle factory ----
   // yPos lets us distribute particles across the full height on init,

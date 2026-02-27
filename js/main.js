@@ -18,8 +18,21 @@ window.APP_ID = "beb2d2e844954540847d8bf07648926e";
 // e.g. ?name=Marko  →  "Marko_4271"
 // ============================================================
 const params   = new URLSearchParams(window.location.search);
-let   baseName = params.get("name") || "Gost";
-window.myUsername = `${baseName}_${Math.floor(10000 + Math.random() * 9000)}`;
+const queryName     = params.get("name");
+const savedUsername = localStorage.getItem("savedUsername");
+// Separate numeric ID purely for Agora — never exposed to users
+window.myAgoraUID = Math.floor(100000 + Math.random() * 900000);
+// Display name priority: URL param → saved → random guest
+if (queryName) {
+  window.myDisplayName = queryName;
+  localStorage.setItem("savedUsername", queryName);
+} else if (savedUsername) {
+  window.myDisplayName = savedUsername;
+} else {
+  window.myDisplayName = `Gost_${Math.floor(10000 + Math.random() * 9000)}`;
+  localStorage.setItem("savedUsername", window.myDisplayName);
+}
+
 
 // ============================================================
 // WAKE LOCK

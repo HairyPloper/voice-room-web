@@ -107,7 +107,7 @@ window.appendMessage = (
   msgDiv.className = "chat-msg";
 
   // Align own messages to the right and tint them green
-  const isMe = data && data.username === window.myUsername;
+  const isMe = data && data.username === window.myDisplayName;
   msgDiv.style.alignSelf = isMe ? "flex-end" : "flex-start";
   if (isMe) msgDiv.style.backgroundColor = "rgba(74, 222, 128, 0.1)";
 
@@ -307,7 +307,7 @@ window.sendMessage = async () => {
   // Push regular message to Firebase Realtime Database
   try {
     await window.chatRef.push({
-      username:  window.myUsername,
+      username: window.myDisplayName,
       text:      text,
       color:     window.myColor || "#4ade80",
       timestamp: Date.now(),
@@ -341,8 +341,21 @@ function handleCommand(text) {
     case "/nick":
       const newNick = args.slice(1).join(" ");
       if (newNick) {
-        window.myUsername = newNick;
-        window.appendMessage("Sistem", `Nadimak promenjen u: **${window.myUsername}**`, "#ffcc00");
+        window.myDisplayName = newNick;
+        localStorage.setItem("savedUsername", newNick);
+
+        // Update presence so other users see the new name immediately
+        if (window.client?.uid) {
+          firebase.database()
+            .ref(`presence/${window.CHANNEL}/${window.client.uid}/displayName`)
+            .set(newNick);
+        }
+
+        // Update own card in the grid
+        const nameEl = document.querySelector(`#user-${window.client?.uid} .username`);
+        if (nameEl) nameEl.textContent = `${newNick} (Ti)`;
+
+        window.appendMessage("Sistem", `Nadimak promenjen u: **${newNick}**`, "#ffcc00");
       }
       return true;
 
@@ -351,7 +364,7 @@ function handleCommand(text) {
       const max = parseInt(args[1]) || 100;
       window.chatRef.push({
         username: "Sistem",
-        text: `🎲 **${window.myUsername}** rola: **${Math.floor(Math.random() * max) + 1}** (1-${max})`,
+        text: `🎲 **${window.myDisplayName}** rola: **${Math.floor(Math.random() * max) + 1}** (1-${max})`,
       });
       return true;
 
@@ -378,7 +391,7 @@ function handleCommand(text) {
       options.forEach((opt) => (pollVotes[opt] = 0));
 
       window.chatRef.push({
-        username:  window.myUsername,
+        username:  window.myDisplayName,
         type:      "poll",
         question:  question,
         options:   options,
@@ -404,7 +417,7 @@ function handleCommand(text) {
       const privateMsg = args.slice(2).join(" ");
       if (target && privateMsg) {
         window.chatRef.push({
-          username:  window.myUsername,
+          username:  window.myDisplayName,
           text:      privateMsg,
           to:        target,
           type:      "private",
@@ -459,8 +472,8 @@ function startChat() {
 
     // Private messages are only shown to the sender and the named recipient
     if (data.type === "private") {
-      const isMeSender = (data.username || "").toLowerCase() === (window.myUsername || "").toLowerCase();
-      const isMeTarget = (data.to || "").toLowerCase()       === (window.myUsername || "").toLowerCase();
+      const isMeSender = (data.username || "").toLowerCase() === (window.myDisplayName  || "").toLowerCase();
+      const isMeTarget = (data.to || "").toLowerCase()       === (window.myDisplayName  || "").toLowerCase();
 
       if (isMeSender || isMeTarget) {
         const prefix = isMeSender
@@ -555,7 +568,7 @@ window.handleFileUpload = async (file) => {
   if (fileUrl && fileUrl.startsWith("http")) {
     // Post the URL to chat — the media formatter will embed it appropriately
     window.chatRef.push({
-      username:  window.myUsername,
+      username:  window.myDisplayName,
       text:      `Dostupno ${expiry}: ${fileUrl}`,
       color:     window.myColor || "#ffffff",
       timestamp: Date.now(),
@@ -810,7 +823,7 @@ window.askAI = async (prompt) => {
         // Push the answer to Firebase so all users see the bot response
         window.chatRef.push({
           username:  `🤖 Bot (${modelName})`,
-          text:      `${window.myUsername} pita: ${prompt}\nOdgovor: ${aiText}`,
+          text:      `${window.myDisplayName} pita: ${prompt}\nOdgovor: ${aiText}`,
           color:     "#fbbf24",
           timestamp: Date.now(),
         });

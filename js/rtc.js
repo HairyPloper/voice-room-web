@@ -120,8 +120,14 @@ window.client.on("user-published", async (user, mediaType) => {
   await window.client.subscribe(user, mediaType);
 
   if (mediaType === "audio") {
-    window.drawUser(user.uid, window.getDisplayName(user.uid));
-    user.audioTrack.play(); // Play directly through the browser's audio output
+    firebase.database()
+      .ref(`presence/${window.CHANNEL}/${user.uid}`)
+      .once("value", (snap) => {
+        const data = snap.val();
+        const icon = data?.icon || null;
+        window.drawUser(user.uid, window.getDisplayName(user.uid), icon);
+        user.audioTrack.play();
+      });
   }
 
   if (mediaType === "video") {
@@ -148,12 +154,18 @@ window.client.on("user-left", (user) => {
  * Draws their card and plays a higher tone to signal arrival.
  */
 window.client.on("user-joined", (user) => {
-  window.drawUser(user.uid, window.getDisplayName(user.uid));
-  if (window.appendMessage)
-    window.appendMessage("Sistem", `**${window.getDisplayName(user.uid)}** se priključio.`, "#ffcc00");
-
-  // Don't play the join tone for the local user's own echo
-  if (user.uid !== window.client.uid) window._playTone(660, 0.1); // Higher tone = arrival
+  firebase.database()
+    .ref(`presence/${window.CHANNEL}/${user.uid}`)
+    .once("value", (snap) => {
+      const data = snap.val();
+      const name = data?.displayName || String(user.uid);
+      const icon = data?.icon || window.animals[Math.floor(Math.random() * window.animals.length)];
+      window.uidNameMap[user.uid] = name;
+      window.drawUser(user.uid, name, icon);
+      if (window.appendMessage)
+        window.appendMessage("Sistem", `**${name}** se priključio.`, "#ffcc00");
+      if (user.uid !== window.client.uid) window._playTone(660, 0.1);
+    });
 });
 
 /**
@@ -186,20 +198,24 @@ if (joinBtn) joinBtn.onclick = async () => {
   btn.disabled = true; // Prevent double-clicks during the async join flow
 
   try {
-    // Agora UIDs must be numeric or a sanitised string — strip special chars
-    const cleanName = window.sanitizeForAgora(window.myUsername);
-    await window.client.join(window.APP_ID, window.CHANNEL, null, cleanName);
+    await window.client.join(window.APP_ID, window.CHANNEL, null, window.myAgoraUID);
     window.client.enableAudioVolumeIndicator();
 
-    if (window.appendMessage)
-      window.appendMessage("Sistem", `Povezan **${cleanName}**`, "#ffcc00");
+if (window.appendMessage)
+      window.appendMessage("Sistem", `Povezan **${window.myDisplayName}**`, "#ffcc00");
+
+    // Write presence so users already in the room can resolve your name
+    window.uidNameMap[window.client.uid] = window.myDisplayName;
+    firebase.database()
+      .ref(`presence/${window.CHANNEL}/${window.client.uid}`)
+      .set({ displayName: window.myDisplayName, icon: window.myIcon });
 
     // Capture and publish the local microphone
     localTracks.audioTrack = await AgoraRTC.createMicrophoneAudioTrack();
     await window.client.publish(localTracks.audioTrack);
 
     // Render the local user's card (isLocal = true so it gets special styling)
-    window.drawUser(window.client.uid, window.getDisplayName(cleanName), window.myIcon, true);
+    window.drawUser(window.client.uid, window.myDisplayName, window.myIcon, true);
 
     // Prevent screen sleep during a call (mobile-friendly)
     window.requestWakeLock();
@@ -248,6 +264,9 @@ async function leaveChannel() {
   }
 
   // --- 4. AGORA CLIENT ---
+  firebase.database()
+  .ref(`presence/${window.CHANNEL}/${window.client.uid}`)
+  .remove();
   await window.client.leave();
 
   // --- 5. RESET LOCAL STATE ---
