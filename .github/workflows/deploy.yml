@@ -24,27 +24,25 @@ jobs:
 
       - name: Build and Bundle
         run: |
+          # 1. Create structure
           mkdir -p dist/js
+          
+          # 2. Copy ALL assets (Favicon, CSS, Media)
           cp index.html dist/index.html
+          cp favicon-v1.png dist/favicon-v1.png
           cp -r css dist/css || true
           cp -r src dist/src || true
 
-          # Logic to handle different branch structures
-          if [ "${{ github.ref_name }}" == "dev_b" ]; then
-            echo "Processing dev_b: Bundling 5 files..."
-            cat js/main.js js/utils.js js/ui.js js/rtc.js js/chat.js > dist/combined.js
-            terser dist/combined.js -o dist/js/bundle.min.js --compress --mangle
-            
-            # Replace multiple scripts with one bundle
-            sed -i '/<script src="js\/main.js"><\/script>/i <script src="js/bundle.min.js"></script>' dist/index.html
-            sed -i '/js\/.*\.js/d' dist/index.html
-          else
-            echo "Processing main: Minifying single main.js..."
-            terser js/main.js -o dist/js/bundle.min.js --compress --mangle
-            
-            # Update main's HTML to point to the new minified bundle
-            sed -i 's/js\/main.js/js\/bundle.min.js/g' dist/index.html
-          fi
+          # 3. Unified Bundling Logic
+          # This combines all JS files into one, regardless of branch
+          echo "Bundling JavaScript files..."
+          cat js/main.js js/utils.js js/ui.js js/rtc.js js/chat.js > dist/combined.js
+          terser dist/combined.js -o dist/js/bundle.min.js --compress --mangle
+          
+          # 4. Update HTML
+          # Injects the bundle and removes all individual script tags
+          sed -i '/js\/main.js/i <script src="js/bundle.min.js"></script>' dist/index.html
+          sed -i '/js\/.*\.js/d' dist/index.html
 
       - name: Deploy to GitHub Pages
         uses: JamesIves/github-pages-deploy-action@v4
