@@ -26,6 +26,27 @@ let screenTrack      = null;
 let screenAudioTrack = null;
 
 // ============================================================
+// SHARED HELPER — resolveRemoteName
+// Returns a Promise<{name, icon}> for a remote Agora UID.
+// Always does a fresh Firebase read so it's not affected by
+// the race between user-joined and user-published.
+// Result is also cached in uidNameMap for getDisplayName().
+// ============================================================
+function resolveRemoteName(uid) {
+  return firebase.database()
+    .ref(`presence/${window.CHANNEL}/${uid}`)
+    .once("value")
+    .then((snap) => {
+      const data = snap.val();
+      const name = data?.displayName || String(uid);
+      const icon = data?.icon || window.animals[Math.floor(Math.random() * window.animals.length)];
+      // Cache so getDisplayName() works for subsequent calls (e.g. chat messages)
+      window.uidNameMap[uid] = name;
+      return { name, icon };
+    });
+}
+
+// ============================================================
 // SCREEN SHARE
 // Toggle screen sharing on/off via the screen-btn button
 // ============================================================
@@ -114,24 +135,26 @@ async function stopScreenShare() {
 
 /**
  * Fired when a remote user publishes an audio or video track.
- * Subscribe immediately, then render the track into the UI.
+ * Subscribe immediately, then resolve the real display name from Firebase
+ * before rendering the card — this avoids showing a raw numeric UID.
  */
 window.client.on("user-published", async (user, mediaType) => {
   await window.client.subscribe(user, mediaType);
 
   if (mediaType === "audio") {
-    firebase.database()
-      .ref(`presence/${window.CHANNEL}/${user.uid}`)
-      .once("value", (snap) => {
-        const data = snap.val();
-        const icon = data?.icon || null;
-        window.drawUser(user.uid, window.getDisplayName(user.uid), icon);
-        user.audioTrack.play();
-      });
+    // FIX: always fetch fresh name/icon here instead of relying on
+    // getDisplayName(), which may not be populated yet due to the
+    // async race with the user-joined handler.
+    const { name, icon } = await resolveRemoteName(user.uid);
+    window.drawUser(user.uid, name, icon);
+    user.audioTrack.play();
   }
 
   if (mediaType === "video") {
-    window.drawUser(user.uid, window.getDisplayName(user.uid));
+    // Name should already be in uidNameMap from user-joined or the audio
+    // branch above, but resolve again to be safe.
+    const { name, icon } = await resolveRemoteName(user.uid);
+    window.drawUser(user.uid, name, icon);
     window.playVideoInCard(user.uid, user.videoTrack);
   }
 });
@@ -141,10 +164,11 @@ window.client.on("user-published", async (user, mediaType) => {
  * Plays a low tone, posts a system message, and removes the user's card.
  */
 window.client.on("user-left", (user) => {
+  const displayName = window.getDisplayName(user.uid);
   delete window.uidNameMap[user.uid];
   window._playTone(440, 0.2); // Lower tone = departure
   if (window.appendMessage)
-    window.appendMessage("Sistem", `**${window.getDisplayName(user.uid)}** je otišao.`, "#ffcc00");
+    window.appendMessage("Sistem", `**${displayName}** je otišao.`, "#ffcc00");
 
   const el = document.getElementById(`user-${user.uid}`);
   if (el) el.remove();
@@ -152,21 +176,15 @@ window.client.on("user-left", (user) => {
 
 /**
  * Fired when a remote user joins the channel.
- * Draws their card and plays a higher tone to signal arrival.
+ * Resolves their display name from Firebase, caches it, draws their card,
+ * and plays a higher tone to signal arrival.
  */
-window.client.on("user-joined", (user) => {
-  firebase.database()
-    .ref(`presence/${window.CHANNEL}/${user.uid}`)
-    .once("value", (snap) => {
-      const data = snap.val();
-      const name = data?.displayName || String(user.uid);
-      const icon = data?.icon || window.animals[Math.floor(Math.random() * window.animals.length)];
-      window.uidNameMap[user.uid] = name;
-      window.drawUser(user.uid, name, icon);
-      if (window.appendMessage)
-        window.appendMessage("Sistem", `**${name}** se priključio.`, "#ffcc00");
-      if (user.uid !== window.client.uid) window._playTone(660, 0.1);
-    });
+window.client.on("user-joined", async (user) => {
+  const { name, icon } = await resolveRemoteName(user.uid);
+  window.drawUser(user.uid, name, icon);
+  if (window.appendMessage)
+    window.appendMessage("Sistem", `**${name}** se priključio.`, "#ffcc00");
+  if (user.uid !== window.client.uid) window._playTone(660, 0.1);
 });
 
 /**
@@ -227,8 +245,10 @@ if (joinBtn) joinBtn.onclick = async () => {
     await window.client.publish(localTracks.audioTrack);
 
     // --- 4. UPDATE PRESENCE IN FIREBASE ---
+    // Write presence BEFORE anything else so remote users who receive
+    // user-joined/user-published can read our displayName immediately.
     window.uidNameMap[window.client.uid] = window.myDisplayName;
-    firebase.database()
+    await firebase.database()
       .ref(`presence/${window.CHANNEL}/${window.client.uid}`)
       .set({ displayName: window.myDisplayName, icon: window.myIcon });
     // Auto-remove presence if connection drops unexpectedly
