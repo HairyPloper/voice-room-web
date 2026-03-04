@@ -155,19 +155,10 @@ window.client.on("user-published", async (user, mediaType) => {
   await window.client.subscribe(user, mediaType);
 
   if (mediaType === "audio") {
-    // FIX: always fetch fresh name/icon here instead of relying on
-    // getDisplayName(), which may not be populated yet due to the
-    // async race with the user-joined handler.
-    const { name, icon } = await resolveRemoteName(user.uid);
-    window.drawUser(user.uid, name, icon);
     user.audioTrack.play();
   }
 
   if (mediaType === "video") {
-    // Name should already be in uidNameMap from user-joined or the audio
-    // branch above, but resolve again to be safe.
-    const { name, icon } = await resolveRemoteName(user.uid);
-    window.drawUser(user.uid, name, icon);
     window.playVideoInCard(user.uid, user.videoTrack);
   }
 });
@@ -194,7 +185,6 @@ window.client.on("user-left", (user) => {
  */
 window.client.on("user-joined", async (user) => {
   const { name, icon } = await resolveRemoteName(user.uid);
-  window.drawUser(user.uid, name, icon);
   if (window.appendMessage)
     window.appendMessage("Sistem", `**${name}** se priključio.`, "#ffcc00");
   if (user.uid !== window.client.uid) window._playTone(660, 0.1);
@@ -338,9 +328,6 @@ async function leaveChannel() {
   // --- removes stale entries
   window.uidNameMap = {};
 
-  // --- 6. USER GRID ---
-  const grid = document.getElementById("user-grid");
-  if (grid) grid.innerHTML = "";
 
   // --- 7. BUTTONS ---
   const leaveBtn = document.getElementById("leave-btn");

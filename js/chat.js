@@ -54,7 +54,7 @@ firebase.auth().onAuthStateChanged((user) => {
   if (user) {
     console.log("Authenticated! Starting chat...");
     startChat();
-
+    startPresenceListener();
     // Safety net: remove the skeleton loader after 5 s if no messages arrive
     setTimeout(() => {
       const skeleton = document.getElementById("chat-skeleton-loader");
@@ -529,6 +529,26 @@ function startChat() {
       if (!data) return;
       const avatar = document.getElementById(`avatar-${uid}`);
       if (avatar) avatar.classList.toggle("muted", data.muted === true);
+    });
+}
+
+// Presence listener — adds/removes users from the grid as they join/leave
+function startPresenceListener() {
+  firebase.database()
+    .ref(`presence/${window.CHANNEL}`)
+    .on("child_added", (snap) => {
+      const data = snap.val();
+      const uid  = snap.key;
+      if (!data?.displayName) return;
+      window.uidNameMap[uid] = data.displayName;
+      window.drawUser(uid, data.displayName, data.icon);
+    });
+
+  firebase.database()
+    .ref(`presence/${window.CHANNEL}`)
+    .on("child_removed", (snap) => {
+      const el = document.getElementById(`user-${snap.key}`);
+      if (el) el.remove();
     });
 }
 
