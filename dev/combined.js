@@ -689,19 +689,10 @@ window.client.on("user-published", async (user, mediaType) => {
   await window.client.subscribe(user, mediaType);
 
   if (mediaType === "audio") {
-    // FIX: always fetch fresh name/icon here instead of relying on
-    // getDisplayName(), which may not be populated yet due to the
-    // async race with the user-joined handler.
-    const { name, icon } = await resolveRemoteName(user.uid);
-    window.drawUser(user.uid, name, icon);
     user.audioTrack.play();
   }
 
   if (mediaType === "video") {
-    // Name should already be in uidNameMap from user-joined or the audio
-    // branch above, but resolve again to be safe.
-    const { name, icon } = await resolveRemoteName(user.uid);
-    window.drawUser(user.uid, name, icon);
     window.playVideoInCard(user.uid, user.videoTrack);
   }
 });
@@ -728,7 +719,6 @@ window.client.on("user-left", (user) => {
  */
 window.client.on("user-joined", async (user) => {
   const { name, icon } = await resolveRemoteName(user.uid);
-  window.drawUser(user.uid, name, icon);
   if (window.appendMessage)
     window.appendMessage("Sistem", `**${name}** se priključio.`, "#ffcc00");
   if (user.uid !== window.client.uid) window._playTone(660, 0.1);
@@ -872,9 +862,6 @@ async function leaveChannel() {
   // --- removes stale entries
   window.uidNameMap = {};
 
-  // --- 6. USER GRID ---
-  const grid = document.getElementById("user-grid");
-  if (grid) grid.innerHTML = "";
 
   // --- 7. BUTTONS ---
   const leaveBtn = document.getElementById("leave-btn");
@@ -1004,7 +991,7 @@ firebase.auth().onAuthStateChanged((user) => {
   if (user) {
     console.log("Authenticated! Starting chat...");
     startChat();
-
+    startPresenceListener();
     // Safety net: remove the skeleton loader after 5 s if no messages arrive
     setTimeout(() => {
       const skeleton = document.getElementById("chat-skeleton-loader");
@@ -1479,6 +1466,26 @@ function startChat() {
       if (!data) return;
       const avatar = document.getElementById(`avatar-${uid}`);
       if (avatar) avatar.classList.toggle("muted", data.muted === true);
+    });
+}
+
+// Presence listener — adds/removes users from the grid as they join/leave
+function startPresenceListener() {
+  firebase.database()
+    .ref(`presence/${window.CHANNEL}`)
+    .on("child_added", (snap) => {
+      const data = snap.val();
+      const uid  = snap.key;
+      if (!data?.displayName) return;
+      window.uidNameMap[uid] = data.displayName;
+      window.drawUser(uid, data.displayName, data.icon);
+    });
+
+  firebase.database()
+    .ref(`presence/${window.CHANNEL}`)
+    .on("child_removed", (snap) => {
+      const el = document.getElementById(`user-${snap.key}`);
+      if (el) el.remove();
     });
 }
 
