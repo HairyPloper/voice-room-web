@@ -1482,10 +1482,12 @@ function startChat() {
           const game = snap.val();
           if (!game || !game.active) return;
           if ((data.username || "") === game.drawer) return;
+          // game word guessed correctly — end the game and announce the winner
           if ((data.text || "").toLowerCase().trim() === game.word.toLowerCase()) {
             firebase.database()
               .ref(`whiteboard-game/${window.CHANNEL}`)
-              .update({ active: false, winner: data.username });
+              .remove();
+            clearInterval(window.timerInterval);
             window.chatRef.push({
               username:  "Sistem",
               text:      `🎉 ${data.username} pogodio reč: ${game.word}!`,
@@ -1982,7 +1984,7 @@ function initWhiteboard() {
   // ============================================================
   const TIMER_ENABLED  = true;   // ← flip to false to disable
   const TIMER_DURATION = 60;     // seconds
-  let timerInterval = null;
+  window.timerInterval = null;
 
   // ============================================================
   // CANVAS SIZING
@@ -2100,7 +2102,7 @@ function initWhiteboard() {
   // ============================================================
   function startTimer(endsAt) {
   clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
+  window.timerInterval = setInterval(() => {
     const secondsLeft = Math.ceil((endsAt - Date.now()) / 1000);
     if (secondsLeft <= 0) {
       clearInterval(timerInterval);
