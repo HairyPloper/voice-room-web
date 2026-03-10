@@ -57,7 +57,7 @@ function initWhiteboard() {
   // ============================================================
   const TIMER_ENABLED  = true;   // ← flip to false to disable
   const TIMER_DURATION = 60;     // seconds
-  let timerInterval = null;
+  window.timerInterval = null;
 
   // ============================================================
   // CANVAS SIZING
@@ -175,7 +175,7 @@ function initWhiteboard() {
   // ============================================================
   function startTimer(endsAt) {
   clearInterval(timerInterval);
-  timerInterval = setInterval(() => {
+  window.timerInterval = setInterval(() => {
     const secondsLeft = Math.ceil((endsAt - Date.now()) / 1000);
     if (secondsLeft <= 0) {
       clearInterval(timerInterval);

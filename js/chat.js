@@ -545,10 +545,12 @@ function startChat() {
           const game = snap.val();
           if (!game || !game.active) return;
           if ((data.username || "") === game.drawer) return;
+          // game word guessed correctly — end the game and announce the winner
           if ((data.text || "").toLowerCase().trim() === game.word.toLowerCase()) {
             firebase.database()
               .ref(`whiteboard-game/${window.CHANNEL}`)
-              .update({ active: false, winner: data.username });
+              .remove();
+            clearInterval(window.timerInterval);
             window.chatRef.push({
               username:  "Sistem",
               text:      `🎉 ${data.username} pogodio reč: ${game.word}!`,
