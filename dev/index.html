@@ -15,11 +15,6 @@
       rel="stylesheet"
     />
 
-    <!-- Inline SVG favicon (loop emoji) -->
-    <!-- <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>➰</text></svg>"
-    /> -->
     <link rel="icon" type="image/png" href="favicon-v1.png">
 
     <!-- Agora RTC SDK for real-time audio/video communication -->
@@ -49,7 +44,7 @@
     <audio loop id="myAudio">
       <source src="src/nemoj.mp3" type="audio/mpeg" />
     </audio>
-
+    
     <!-- ============================================================
          HEADER
          App title and live connection status message
@@ -99,18 +94,7 @@
     <div id="chat-container">
 
       <!-- Chat header: toggle buttons, settings, drag handle -->
-      <div
-        id="chat-header"
-        style="
-          display: flex;
-          justify-content: flex-end;
-          align-items: center;
-          padding: 10px;
-          background: var(--glass-bg);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px 12px 0 0;
-        "
-      >
+      <div id="chat-header">
         <span id="unread-badge" class="hidden">0</span>
         <!-- Toggle background music on/off -->
         <button
@@ -273,6 +257,47 @@
         <button id="send-btn">💬</button>
       </div>
     </div>
+    <!-- ============================================================
+         WHITEBOARD
+         Draggable canvas with basic drawing tools, toggled via /crtkica command
+         ============================================================ -->
+    <div id="whiteboard-container" class="hidden">
+      <div id="whiteboard-header">
+        <!-- Drag handle — lets users reposition the chat panel -->
+        <div id="whiteboard-drag-handle">
+          <!-- Six-dot grid icon (SVG) -->
+          <svg
+            width="20"
+            viewBox="0 0 24 24"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="9" cy="5" r="1"></circle>
+            <circle cx="9" cy="12" r="1"></circle>
+            <circle cx="9" cy="19" r="1"></circle>
+            <circle cx="15" cy="5" r="1"></circle>
+            <circle cx="15" cy="12" r="1"></circle>
+            <circle cx="15" cy="19" r="1"></circle>
+          </svg>
+        </div>
+        <button id="whiteboard-close">✕</button>
+      </div>
+      <div id="whiteboard-toolbar">
+        <input type="color" id="wb-color" value="#4ade80" title="Boja">
+        <input type="range" id="wb-size" min="1" max="20" value="3" title="Veličina">
+        <button id="wb-eraser" class="wb-btn">⬜ Gumica</button>
+        <button id="wb-clear" class="wb-btn">🗑️ Obriši sve</button>
+        <button id="wb-word" class="wb-btn">🎮 Stižem</button>
+        <button id="wb-stop" class="wb-btn" style="display:none;">⏹ Završi igru</button>
+        <span id="wb-current-word" style="color:#fbbf24; font-size:0.85rem; margin-left:5px;"></span>
+      </div>
+        <canvas id="whiteboard-canvas"></canvas>
+        </div>
+    </div>
 
     <!-- ============================================================
          FIREBASE SDKs
@@ -293,20 +318,19 @@
 
       // Global channel name used by Agora and Firebase
       window.CHANNEL = "Linkice";
+      const isDesktop = !/iPhone|iPad|Android/i.test(navigator.userAgent);
 
       // Slash-command definitions consumed by the autocomplete menu
       window.commands = [
+        { cmd: "/nick",  desc: "Promena imena /nick {ime}" },
+        { cmd: "/poll",  desc: "Anketa /poll {pitanje}, {opcija 1}, {opcija 2} ..." },
+        { cmd: "/roll",  desc: "Kockica /roll {num}" },
         { cmd: "/clear", desc: "Očisti čet" },
-        { cmd: "/nick",  desc: "Promeni ime /nick {ime}" },
-        { cmd: "/roll",  desc: "Baci kockicu /roll {num}" },
+        { cmd: "/help",  desc: "Pomoć" },
         { cmd: "/ping",  desc: "Ping test Agora" },
         { cmd: "/msg",   desc: "Privatna poruka /msg {ime} {poruka}" },
-        {
-          cmd: "/poll",
-          desc: "Kreiraj anketu /poll {pitanje}, {opcija 1}, {opcija 2} ...",
-        },
         { cmd: "/bot",   desc: "Postavi pitanje botu /bot {pitanje}" },
-        { cmd: "/help",  desc: "Pomoć" },
+        ...(isDesktop ? [{ cmd: "/crtkica", desc: "Otvori/zatvori crtkicu" }] : []),
       ];
     </script>
 
@@ -315,6 +339,6 @@
          Load order matters: main → utils → ui → rtc → chat
          ============================================================ -->
     <script src="js/bundle.min.js"></script>
-
+    <script src="js/whiteboard.js"></script>
   </body>
 </html>
