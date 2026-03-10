@@ -367,7 +367,7 @@ function handleCommand(text) {
 
   const args    = text.split(" ");
   const command = args[0].toLowerCase();
-
+  const isDesktop = !/iPhone|iPad|Android/i.test(navigator.userAgent);
   switch (command) {
 
     // Wipe the local chat view
@@ -406,7 +406,22 @@ function handleCommand(text) {
         text: `🎲 **${window.myDisplayName}** rola: **${Math.floor(Math.random() * max) + 1}** (1-${max})`,
       });
       return true;
-
+    case "/crtkica":
+      if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
+        window.appendMessage("Sistem", "Crtkica nije dostupna na mobilnom uređaju.", "#ef4444");
+        return true;
+      }
+      const wb = document.getElementById("whiteboard-container");
+      if (wb) {
+        wb.classList.toggle("hidden");
+        if (!wb.classList.contains("hidden")) {
+          setTimeout(() => {
+            if (window.resizeWhiteboardCanvas) window.resizeWhiteboardCanvas();
+            if (window.loadWhiteboardSnapshot) window.loadWhiteboardSnapshot();
+          }, 50);
+        }
+      }
+      return true;
     // Ask the AI bot a question
     case "/bot":
       const prompt = args.slice(1).join(" ");
@@ -478,6 +493,7 @@ function handleCommand(text) {
             <code style="color: #fbbf24;text-align: left;">/clear</code>            <span>Očisti čet</span>
             <code style="color: #fbbf24;text-align: left;">/ping</code>             <span>Ping test Agora</span>
             <code style="color: #fbbf24;text-align: left;">/msg {ime} {poruka}</code> <span>Pošalji privatnu poruku</span>
+            ${isDesktop ? `<code style="color: #fbbf24;text-align: left;">/crtkica</code> <span>Otvori/zatvori crtkicu</span>` : ""}
             <code style="color: #fbbf24;text-align: left;">/bot {pitanje}</code>    <span>Postavi pitanje botu</span>
           </div>
         </div>`;
@@ -522,7 +538,27 @@ function startChat() {
       }
       return;
     }
-
+    if (data.username !== "Sistem") {
+      firebase.database()
+        .ref(`whiteboard-game/${window.CHANNEL}`)
+        .once("value", (snap) => {
+          const game = snap.val();
+          if (!game || !game.active) return;
+          if ((data.username || "") === game.drawer) return;
+          if ((data.text || "").toLowerCase().trim() === game.word.toLowerCase()) {
+            firebase.database()
+              .ref(`whiteboard-game/${window.CHANNEL}`)
+              .update({ active: false, winner: data.username });
+            window.chatRef.push({
+              username:  "Sistem",
+              text:      `🎉 ${data.username} pogodio reč: ${game.word}!`,
+              color:     "#4ade80",
+              timestamp: Date.now(),
+            });
+            if (window.launchWhiteboardConfetti) window.launchWhiteboardConfetti();
+          }
+        });
+    }
     // Standard messages and polls
     window.appendMessage(data.username, data.text, data.color || "#4ade80", key, data);
   });

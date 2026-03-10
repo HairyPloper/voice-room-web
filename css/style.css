@@ -562,6 +562,13 @@ h2 {
 /* Drag handle — non-selectable for cleaner UX */
 #chat-header {
   user-select: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px 12px 0 0;
 }
 
 /* Scrollable message feed */
@@ -1216,4 +1223,121 @@ h2 {
 /* Upload expiry selector — pointer cursor for clarity */
 #upload-expiry {
   cursor: pointer;
+}
+
+/* ============================================================
+   WHITEBOARD
+   Matches the style of the rest of the app
+   ============================================================ */
+#whiteboard-container {
+  position: fixed;
+  top: 80px;
+  left: 30%;
+  transform: translateX(-50%);
+  width: 800px;
+  height: 600px;
+  background: var(--glass-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  display: flex;
+  flex-direction: column;
+  z-index: 999;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+#whiteboard-container.hidden { display: none; }
+
+#whiteboard-header {
+  user-select: none;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 10px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px 12px 0 0;
+}
+
+#whiteboard-drag-handle {
+  padding: 5px;
+  display: flex;
+  color: #4ade80;
+  cursor: grab;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+#whiteboard-drag-handle:hover {
+  opacity: 1;
+  color: #4ade80;
+}
+
+#whiteboard-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--glass-border);
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.wb-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--glass-border);
+  color: #e2e8f0;
+  border-radius: 50px;
+  padding: 4px 12px;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-family: "Outfit", sans-serif;
+  transition: all 0.2s ease;
+}
+
+.wb-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: var(--primary);
+  color: white;
+}
+
+.wb-btn.active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.4);
+}
+
+#whiteboard-close {
+  background: none;
+  border: none;
+  opacity: 0.6;
+  cursor: pointer;
+  color: #4ade80;
+  font-size: 18px;
+}
+
+#whiteboard-close:hover {
+  opacity: 1;
+  color: #4ade80;
+}
+
+#whiteboard-canvas {
+  flex: 1;
+  border-radius: 0 0 20px 20px;
+  cursor: crosshair;
+  width: 100%;
+}
+
+#wb-current-word {
+  font-size: 0.82rem;
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin-left: 4px;
+}
+
+@keyframes confetti-fall {
+  0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(400px) rotate(720deg); opacity: 0; }
 }
