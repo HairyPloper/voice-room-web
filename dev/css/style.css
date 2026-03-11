@@ -511,6 +511,13 @@ h2 {
   object-fit: cover !important;
 }
 
+#bgVideo::-webkit-media-controls {
+  display: none !important;
+}
+#bgVideo::-webkit-media-controls-start-playback-button {
+  display: none !important;
+}
+
 /* ============================================================
    FULLSCREEN VIDEO (cross-browser)
    Removes border-radius and switches to contain when fullscreen
