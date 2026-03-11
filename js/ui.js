@@ -34,6 +34,20 @@ if (videoToggle && bgVideo) {
 }
 
 // ============================================================
+// MOBILE AUTOPLAY FIX
+// Mobile browsers block autoplay — play on first user interaction
+// ============================================================
+if (bgVideo && bgVideo.paused) {
+  const playOnInteraction = () => {
+    bgVideo.play();
+    document.removeEventListener("touchstart", playOnInteraction);
+    document.removeEventListener("click", playOnInteraction);
+  };
+  document.addEventListener("touchstart", playOnInteraction, { once: true });
+  document.addEventListener("click", playOnInteraction, { once: true });
+}
+
+// ============================================================
 // AUDIO TOGGLE
 // Play/pause background music and reflect state via icon + CSS class
 // ============================================================
