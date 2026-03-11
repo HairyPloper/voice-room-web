@@ -22,7 +22,7 @@ const settingsMenu = document.getElementById("settings-menu");
 
 // ASCII art banner shown in chat on first load
 const welcomeArt = `
-<pre style="font-family: monospace; color: #4ade80; line-height: 1.2; font-size: 10px;">
+<pre style="font-family: monospace; color: #805ff5; line-height: 1.2; font-size: 10px;">
  _      _____ _   _ _   _______ _____ _____ 
 | |    |_   _| \\ | | | / /_   _/  __ \\  ___|
 | |      | | |  \\| | |/ /  | | | /  \\/ |__  
@@ -30,7 +30,7 @@ const welcomeArt = `
 | |____ _| |_| |\\  | |\\  \\_| |_| \\__/\\ |___ 
 \\_____/\\___/\\_| \\_\\_| \\_/\\___/ \\____/\\____/
 </pre>
-<small style="color: #60a5fa;">/help za listu komadni</small>`;
+<small style="color: #805ff5;">/help za listu komadni</small>`;
 
 // ============================================================
 // STATE
@@ -88,7 +88,7 @@ if (chatMessages) {
 window.appendMessage = (
   name,
   text = "",
-  color = "#4ade80",
+  color = "#805ff5",
   snapshotKey = null,
   data = null,
 ) => {
@@ -342,7 +342,7 @@ window.sendMessage = async () => {
     await window.chatRef.push({
       username: window.myDisplayName,
       text:      text,
-      color:     window.myColor || "#4ade80",
+      color:     window.myColor || "#805ff5",
       timestamp: Date.now(),
     });
     chatInput.value = "";
@@ -459,9 +459,7 @@ function handleCommand(text) {
     case "/ping":
       if (window.client && typeof window.client.getRTCStats === "function") {
         const rtc = window.client.getRTCStats();
-        window.appendMessage("Sistem", `📊 Mreža: ${rtc.RTT}ms | Korisnika: ${rtc.UserCount}`, "#4ade80");
-      } else {
-        window.appendMessage("Sistem", "🏓 Pong! Sistem je aktivan.", "#4ade80");
+        window.appendMessage("Sistem", `📊 Mreža: ${rtc.RTT}ms | Korisnika: ${rtc.UserCount}`, "#805ff5");
       }
       return true;
 
@@ -554,7 +552,7 @@ function startChat() {
             window.chatRef.push({
               username:  "Sistem",
               text:      `🎉 ${data.username} pogodio reč: ${game.word}!`,
-              color:     "#4ade80",
+              color:     "#ffcc00",
               timestamp: Date.now(),
             });
             if (window.launchWhiteboardConfetti) window.launchWhiteboardConfetti();
@@ -562,7 +560,7 @@ function startChat() {
         });
     }
     // Standard messages and polls
-    window.appendMessage(data.username, data.text, data.color || "#4ade80", key, data);
+    window.appendMessage(data.username, data.text, data.color || "#805ff5", key, data);
   });
 
   // Listen for updates to existing messages (used for live poll vote counts)
@@ -666,7 +664,7 @@ async function uploadFile(file, expiry) {
 /** Uploads a file and posts the resulting URL as a chat message */
 window.handleFileUpload = async (file) => {
   if (window.appendMessage)
-    window.appendMessage("Sistem", `Slanje fajla: ${file.name}...`, "#60a5fa");
+    window.appendMessage("Sistem", `Slanje fajla: ${file.name}...`, "#ffcc00");
 
   const expirySelect = document.getElementById("upload-expiry");
   const expiry  = expirySelect ? expirySelect.value : "trajno";
@@ -683,7 +681,7 @@ window.handleFileUpload = async (file) => {
   } else {
     const errorDetail = fileUrl || "Problem sa serverom";
     if (window.appendMessage)
-      window.appendMessage("Sistem", `Greška pri slanju: ${errorDetail}`, "#f87171");
+      window.appendMessage("Sistem", `Greška pri slanju: ${errorDetail}`, "#ef4444");
   }
 }
 
@@ -966,10 +964,10 @@ window.appendSystemHTML = (htmlContent, atTop = false) => {
   msgDiv.style.width     = "90%";
 
   if (atTop) {
-    msgDiv.innerHTML = `<b style="color: #60a5fa">Dobrodošli</b><br>${htmlContent}`;
+    msgDiv.innerHTML = `<b style="color: #805ff5">Dobrodošli</b><br>${htmlContent}`;
     chatMessages.prepend(msgDiv);
   } else {
-    msgDiv.innerHTML = `<b style="color: #60a5fa">Komande:</b><br>${htmlContent}`;
+    msgDiv.innerHTML = `<b style="color: #805ff5">Komande:</b><br>${htmlContent}`;
     chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }

@@ -1,7 +1,6 @@
 /**
  * js/ui.js
  * User interface logic — video background, background music,
- * particle effects (snow/hearts), user card rendering, and video overlays.
  */
 
 // ============================================================
@@ -11,7 +10,6 @@ const bgVideo     = document.getElementById("bgVideo");
 const videoToggle = document.getElementById("videoToggle");
 const audio       = document.getElementById("myAudio");
 const audioBtn    = document.getElementById("audioToggle");
-const snowToggle  = document.getElementById("snowToggle");
 
 // ============================================================
 // BACKGROUND MUSIC
@@ -53,22 +51,6 @@ if (audioBtn && audio) {
   };
 }
 
-// ============================================================
-// SNOW / PARTICLE TOGGLE (mobile only, hidden on desktop via CSS)
-// Restarts the particle system if toggled on; particles fade out naturally if off
-// ============================================================
-if (snowToggle) {
-  snowToggle.onclick = () => {
-    window.isSnowing = !window.isSnowing;
-
-    if (window.isSnowing) {
-      window.restartSnow(); // Refill the particle pool immediately
-    }
-
-    // Dim the button when the effect is off
-    snowToggle.style.opacity = window.isSnowing ? "1" : "0.5";
-  };
-}
 
 // ============================================================
 // USER CARD RENDERER
@@ -191,110 +173,3 @@ window.removeVideoFromCard = (uid) => {
   const avatar = document.querySelector(`#user-${uid} .avatar`);
   if (avatar) avatar.style.display = "flex";
 };
-
-// ============================================================
-// PARTICLE EFFECT (Snow / Hearts)
-// IIFE so all canvas state is encapsulated and doesn't pollute global scope.
-// Renders either ❄ snowflakes or ❤ hearts depending on the username.
-// ============================================================
-(function () {
-
-  // Fixed canvas sits behind all content (z-index: -1, pointer-events: none)
-  const canvas = document.createElement("canvas");
-  Object.assign(canvas.style, {
-    position:      "fixed",
-    top:           "0",
-    left:          "0",
-    width:         "100vw",
-    height:        "100vh",
-    pointerEvents: "none", // Clicks pass straight through
-    zIndex:        "-1",
-  });
-  document.body.appendChild(canvas);
-  const ctx = canvas.getContext("2d");
-
-  let particles = [];
-
-  // Global flag read by the snow toggle button and the draw loop
-  window.isSnowing = true;
-
-  // Easter egg: users whose name starts with "Pako" get red hearts instead of snowflakes
-  const isPako = window.myDisplayName?.startsWith("Pako"); // ✅
-
-  // ---- Particle factory ----
-  // yPos lets us distribute particles across the full height on init,
-  // or start them above the viewport (-canvas.height) when restarting
-  function createParticle(yPos) {
-    return {
-      x:      Math.random() * canvas.width,
-      y:      yPos,
-      speed:  0.5 + Math.random(),        // Slight speed variance for depth effect
-      size:   isPako ? 15 : 3,
-      symbol: isPako ? "❤" : "❄",
-    };
-  }
-
-  /**
-   * Refills the particle pool up to 100 when the effect is toggled back on.
-   * New particles start above the viewport so they drift in naturally.
-   */
-  window.restartSnow = () => {
-    const targetCount = 100;
-    if (particles.length < targetCount) {
-      const toAdd = targetCount - particles.length;
-      for (let i = 0; i < toAdd; i++) {
-        particles.push(createParticle(Math.random() * -canvas.height));
-      }
-    }
-  };
-
-  /** Resizes the canvas to match the viewport and reseeds the particle array */
-  function resize() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
-    // Distribute initial particles across the full canvas height
-    particles = Array.from({ length: 100 }, () =>
-      createParticle(Math.random() * canvas.height)
-    );
-  }
-
-  window.addEventListener("resize", resize);
-  resize(); // Initial sizing
-
-  // ---- Draw loop ----
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Pause loop when nothing to draw — resume via restartSnow
-    if (particles.length === 0 && !window.isSnowing) {
-      setTimeout(() => requestAnimationFrame(draw), 1000);
-      return;
-    }
-    // Iterate backwards so splicing doesn't skip items
-    for (let i = particles.length - 1; i >= 0; i--) {
-      const p = particles[i];
-
-      ctx.fillStyle = isPako ? "red" : "white";
-      ctx.font      = `${p.size * 2}px serif`;
-      ctx.fillText(p.symbol, p.x, p.y);
-
-      p.y += p.speed; // Move particle downward each frame
-
-      // When a particle exits the bottom of the canvas:
-      if (p.y > canvas.height) {
-        if (window.isSnowing) {
-          // Loop it back to the top with a new random X position
-          p.y = -20;
-          p.x = Math.random() * canvas.width;
-        } else {
-          // Remove it — existing particles "fall out" gracefully instead of cutting off instantly
-          particles.splice(i, 1);
-        }
-      }
-    }
-
-    requestAnimationFrame(draw);
-  }
-
-  draw();
-})();

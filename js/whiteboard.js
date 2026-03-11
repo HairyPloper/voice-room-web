@@ -34,7 +34,7 @@ function initWhiteboard() {
   // ============================================================
   let drawing      = false;
   let isEraser     = false;
-  let currentColor = "#000000";
+  let currentColor = "#ffffff";
   let currentSize  = 3;
   let lastX = 0, lastY = 0;
   let myWord = null;
@@ -49,13 +49,14 @@ function initWhiteboard() {
   const WORDS = [
     "petak","ponedeljak","familija","doktor","tiba","linija","pomfrit","gospodarica","osvezenje","majonez",
     "boks","umor","fabrika","sizofrenija","ruke","gas","spavanje","makarone","gram","pirat",
-    "pepko","inkubator","dusek","krompiri","smi","federacija","drugostepena","prekovremeno","brisanje","pivo"
+    "pepko","inkubator","dusek","krompiri","smi","federacija","drugostepena","prekovremeno","brisanje","pivo",
+    "dremikca","ispravljanje","palacinka","maskembal","planinarenje","politika","bazen","fotelja","prosiptati","slagalica"
   ];
 
   // ============================================================
   // TIMER CONFIG
   // ============================================================
-  const TIMER_ENABLED  = true;   // ← flip to false to disable
+  const TIMER_ENABLED  = true;   // set to false to disable timer and show word until stop button is pressed
   const TIMER_DURATION = 60;     // seconds
   window.timerInterval = null;
 
@@ -118,7 +119,7 @@ function initWhiteboard() {
     window.chatRef.push({
       username:  "Sistem",
       text:      `🎮 ${window.myDisplayName} crta reč — pogodite šta je...`,
-      color:     "#fbbf24",
+      color:     "#ffcc00",
       timestamp: Date.now(),
     });
   };
@@ -135,7 +136,7 @@ function initWhiteboard() {
     window.chatRef.push({
       username:  "Sistem",
       text:      `🛑 ${window.myDisplayName} je zaustavio igru.`,
-      color:     "#f87171",
+      color:     "#ffcc00",
       timestamp: Date.now(),
     });
   };
@@ -187,7 +188,7 @@ function initWhiteboard() {
         window.chatRef.push({
           username:  "Sistem",
           text:      `⏰ Vreme je isteklo! Reč je bila: ${data.word}`,
-          color:     "#f87171",
+          color:     "#ffcc00",
           timestamp: Date.now(),
         });
       });
