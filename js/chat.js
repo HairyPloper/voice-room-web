@@ -595,7 +595,8 @@ function startPresenceListener() {
       const uid  = snap.key;
       if (!data?.displayName) return;
       window.uidNameMap[uid] = data.displayName;
-      window.drawUser(uid, data.displayName, data.icon);
+      const isMe = uid === String(window.myAgoraUID);
+      window.drawUser(uid, data.displayName, data.icon, isMe);
     });
 
   firebase.database()
