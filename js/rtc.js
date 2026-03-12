@@ -33,7 +33,7 @@ let screenAudioTrack = null;
 // Result is also cached in uidNameMap for getDisplayName().
 // ============================================================
 async function resolveRemoteName(uid) {
-  const MAX_ATTEMPTS = 5;
+  const MAX_ATTEMPTS = 3;
   const BASE_DELAY   = 200;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
@@ -155,19 +155,10 @@ window.client.on("user-published", async (user, mediaType) => {
   await window.client.subscribe(user, mediaType);
 
   if (mediaType === "audio") {
-    // FIX: always fetch fresh name/icon here instead of relying on
-    // getDisplayName(), which may not be populated yet due to the
-    // async race with the user-joined handler.
-    const { name, icon } = await resolveRemoteName(user.uid);
-    window.drawUser(user.uid, name, icon);
     user.audioTrack.play();
   }
 
   if (mediaType === "video") {
-    // Name should already be in uidNameMap from user-joined or the audio
-    // branch above, but resolve again to be safe.
-    const { name, icon } = await resolveRemoteName(user.uid);
-    window.drawUser(user.uid, name, icon);
     window.playVideoInCard(user.uid, user.videoTrack);
   }
 });
@@ -181,7 +172,7 @@ window.client.on("user-left", (user) => {
   delete window.uidNameMap[user.uid];
   window._playTone(440, 0.2); // Lower tone = departure
   if (window.appendMessage)
-    window.appendMessage("Sistem", `**${displayName}** je otišao.`, "#ffcc00");
+    window.appendMessage("Sistem", `**${displayName}** je otišao.`, "#fbbf24");
 
   const el = document.getElementById(`user-${user.uid}`);
   if (el) el.remove();
@@ -194,9 +185,8 @@ window.client.on("user-left", (user) => {
  */
 window.client.on("user-joined", async (user) => {
   const { name, icon } = await resolveRemoteName(user.uid);
-  window.drawUser(user.uid, name, icon);
   if (window.appendMessage)
-    window.appendMessage("Sistem", `**${name}** se priključio.`, "#ffcc00");
+    window.appendMessage("Sistem", `**${name}** se priključio.`, "#fbbf24");
   if (user.uid !== window.client.uid) window._playTone(660, 0.1);
 });
 
@@ -217,6 +207,35 @@ window.client.on("volume-indicator", (volumes) => {
       document.getElementById(`avatar-${id}`)?.classList.add("speaking");
     }
   });
+});
+
+//** Fired when the connection state changes (e.g. due to network issues).
+// Updates the header status text and color to reflect reconnecting/disconnected states,
+// and posts system messages on disconnect/reconnect events.
+// Note: Agora automatically tries to reconnect, so we don't need to do anything here
+// except update the UI to keep the user informed. */
+window.client.on("connection-state-change", (curState, prevState) => {
+  const s = document.getElementById("status");
+  if (!s) return;
+
+  if (curState === "RECONNECTING") {
+    s.innerText   = "⏳ Ponovno povezivanje...";
+    s.style.color = "#fbbf24";
+  }
+
+  if (curState === "DISCONNECTED" && prevState === "RECONNECTING") {
+    s.innerText   = "Veza prekinuta";
+    s.style.color = "#f87171";
+    if (window.appendMessage)
+      window.appendMessage("Sistem", "Veza je prekinuta.", "#f87171");
+  }
+
+  if (curState === "CONNECTED" && prevState === "RECONNECTING") {
+    s.innerText   = isMuted ? "Mutiran 🤐" : "Povezan • Live";
+    s.style.color = isMuted ? "#f87171"    : "#4ade80";
+    if (window.appendMessage)
+      window.appendMessage("Sistem", "Veza je obnovljena. ✅", "#4ade80");
+  }
 });
 
 // ============================================================
@@ -270,7 +289,7 @@ if (joinBtn) joinBtn.onclick = async () => {
       .onDisconnect().remove();
       
     if (window.appendMessage)
-      window.appendMessage("Sistem", `Povezan **${window.myDisplayName}**`, "#ffcc00");
+      window.appendMessage("Sistem", `Povezan **${window.myDisplayName}**`, "#fbbf24");
 
     // --- 5. UPDATE UI TO CONNECTED STATE ---
     window.drawUser(window.client.uid, window.myDisplayName, window.myIcon, true);
@@ -286,6 +305,7 @@ if (joinBtn) joinBtn.onclick = async () => {
 
     if (window.innerWidth < 768) {
       window.chatContainer.classList.add("collapsed");
+      document.getElementById("settings-btn").classList.add("hidden");
     }
 
   } catch (e) {
@@ -337,9 +357,6 @@ async function leaveChannel() {
   // --- removes stale entries
   window.uidNameMap = {};
 
-  // --- 6. USER GRID ---
-  const grid = document.getElementById("user-grid");
-  if (grid) grid.innerHTML = "";
 
   // --- 7. BUTTONS ---
   const leaveBtn = document.getElementById("leave-btn");
@@ -361,11 +378,13 @@ async function leaveChannel() {
   // --- 9. CHAT — re-expand if collapsed on mobile after joining ---
   if (window.chatContainer) {
     window.chatContainer.classList.remove("collapsed");
+    document.getElementById("settings-btn").classList.remove("hidden");
+    //TODO: settings btn should show on mobile when not in a call, but it's currently tied to the chat header which is hidden when collapsed — consider moving it outside the chat container
   }
 
   // --- 10. SYSTEM MESSAGE ---
   if (window.appendMessage) {
-    window.appendMessage("Sistem", "Izašao si iz kanala.", "#ffcc00");
+    window.appendMessage("Sistem", "Izašao si iz kanala.", "#fbbf24");
   }
 }
 
@@ -385,6 +404,11 @@ window.toggleMute = async () => {
 
   // setEnabled(false) mutes without destroying the track
   await localTracks.audioTrack.setEnabled(!isMuted);
+
+  // Update mute state in Firebase so remote users can see it in their UI
+  firebase.database()
+  .ref(`presence/${window.CHANNEL}/${window.client.uid}`)
+  .update({ muted: isMuted });
 
   // Visually dim the local avatar when muted
   const avatarEl = document.getElementById(`avatar-${window.client.uid}`);

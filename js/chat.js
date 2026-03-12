@@ -22,7 +22,7 @@ const settingsMenu = document.getElementById("settings-menu");
 
 // ASCII art banner shown in chat on first load
 const welcomeArt = `
-<pre style="font-family: monospace; color: #4ade80; line-height: 1.2; font-size: 10px;">
+<pre style="font-family: monospace; color: #805ff5; line-height: 1.2; font-size: 10px;">
  _      _____ _   _ _   _______ _____ _____ 
 | |    |_   _| \\ | | | / /_   _/  __ \\  ___|
 | |      | | |  \\| | |/ /  | | | /  \\/ |__  
@@ -30,7 +30,7 @@ const welcomeArt = `
 | |____ _| |_| |\\  | |\\  \\_| |_| \\__/\\ |___ 
 \\_____/\\___/\\_| \\_\\_| \\_/\\___/ \\____/\\____/
 </pre>
-<small style="color: #60a5fa;">/help za listu komadni</small>`;
+<small style="color: #805ff5;">/help za listu komadni</small>`;
 
 // ============================================================
 // STATE
@@ -52,9 +52,8 @@ let selectedIndex = 0;
 // ============================================================
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
-    console.log("Authenticated! Starting chat...");
     startChat();
-
+    startPresenceListener();
     // Safety net: remove the skeleton loader after 5 s if no messages arrive
     setTimeout(() => {
       const skeleton = document.getElementById("chat-skeleton-loader");
@@ -88,7 +87,7 @@ if (chatMessages) {
 window.appendMessage = (
   name,
   text = "",
-  color = "#4ade80",
+  color = "#805ff5",
   snapshotKey = null,
   data = null,
 ) => {
@@ -250,12 +249,30 @@ function formatMediaLinks(url) {
   // --- Spotify embed (track, album, or playlist) ---
   if (spotifyMatch) {
     const [, type, id] = spotifyMatch;
-    const h = type === "track" ? "80" : "152"; // Compact height for tracks
+
+    // Track = compact (80px), single song = standard (152px),
+    // playlist/album = full view with native volume slider (352px)
+    const heightMap = {
+      track: 152,
+      episode: 152,
+      album: 352,
+      playlist: 352,
+      artist: 352,
+    };
+    const h = heightMap[type] ?? 152;
+    const isFull = h > 152;
+
     return `
-      <div class="media-card media-card--spotify">
-        <iframe src="https://open.spotify.com/embed/${type}/${id}"
-          width="100%" height="${h}" frameborder="0"
-          allow="encrypted-media" class="media-spotify"></iframe>
+      <div class="media-card media-card--spotify ${isFull ? "media-card--spotify-full" : ""}">
+        <iframe
+          src="https://open.spotify.com/embed/${type}/${id}?utm_source=generator&theme=0"
+          width="100%"
+          height="${h}"
+          frameborder="0"
+          allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+          loading="lazy"
+          class="media-spotify"
+        ></iframe>
       </div>`;
   }
 
@@ -324,7 +341,7 @@ window.sendMessage = async () => {
     await window.chatRef.push({
       username: window.myDisplayName,
       text:      text,
-      color:     window.myColor || "#4ade80",
+      color:     window.myColor || "#805ff5",
       timestamp: Date.now(),
     });
     chatInput.value = "";
@@ -349,7 +366,7 @@ function handleCommand(text) {
 
   const args    = text.split(" ");
   const command = args[0].toLowerCase();
-
+  const isDesktop = !/iPhone|iPad|Android/i.test(navigator.userAgent);
   switch (command) {
 
     // Wipe the local chat view
@@ -363,20 +380,11 @@ function handleCommand(text) {
       if (newNick) {
         window.myDisplayName = newNick;
         localStorage.setItem("savedUsername", newNick);
-
-        // Update presence so other users see the new name immediately
-        //TODO: nobody is listening with on() so it does nothing
-        // if (window.client?.uid) {
-        //   firebase.database()
-        //     .ref(`presence/${window.CHANNEL}/${window.client.uid}/displayName`)
-        //     .set(newNick);
-        // }
-
         // Update own card in the grid
         const nameEl = document.querySelector(`#user-${window.client?.uid} .username`);
         if (nameEl) nameEl.textContent = `${newNick} (Ti)`;
 
-        window.appendMessage("Sistem", `Nadimak promenjen u: **${newNick}**`, "#ffcc00");
+        window.appendMessage("Sistem", `Nadimak promenjen u: **${newNick}**`, "#fbbf24");
       }
       return true;
 
@@ -386,9 +394,38 @@ function handleCommand(text) {
       window.chatRef.push({
         username: "Sistem",
         text: `🎲 **${window.myDisplayName}** rola: **${Math.floor(Math.random() * max) + 1}** (1-${max})`,
+        color: "#fbbf24",
       });
       return true;
-
+    case "/space":
+      const spaceArg = args[1];
+      if (!spaceArg) {
+        window.appendMessage("Sistem", "Format: /space {naziv-prostora}", "#ef4444");
+        return true;
+      }
+      const spaceName = spaceArg.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64);
+      if (!spaceName) {
+        window.appendMessage("Sistem", "Naziv prostora sadrži nedozvoljene karaktere.", "#ef4444");
+        return true;
+      }
+      window.location.href = `?space=${spaceName}&name=${encodeURIComponent(window.myDisplayName)}`;
+      return true;  
+    case "/crtkica":
+      if (/iPhone|iPad|Android/i.test(navigator.userAgent)) {
+        window.appendMessage("Sistem", "Crtkica nije dostupna na mobilnom uređaju.", "#ef4444");
+        return true;
+      }
+      const wb = document.getElementById("whiteboard-container");
+      if (wb) {
+        wb.classList.toggle("hidden");
+        if (!wb.classList.contains("hidden")) {
+          setTimeout(() => {
+            if (window.resizeWhiteboardCanvas) window.resizeWhiteboardCanvas();
+            if (window.loadWhiteboardSnapshot) window.loadWhiteboardSnapshot();
+          }, 50);
+        }
+      }
+      return true;
     // Ask the AI bot a question
     case "/bot":
       const prompt = args.slice(1).join(" ");
@@ -426,9 +463,7 @@ function handleCommand(text) {
     case "/ping":
       if (window.client && typeof window.client.getRTCStats === "function") {
         const rtc = window.client.getRTCStats();
-        window.appendMessage("Sistem", `📊 Mreža: ${rtc.RTT}ms | Korisnika: ${rtc.UserCount}`, "#4ade80");
-      } else {
-        window.appendMessage("Sistem", "🏓 Pong! Sistem je aktivan.", "#4ade80");
+        window.appendMessage("Sistem", `📊 Mreža: ${rtc.RTT}ms | Korisnika: ${rtc.UserCount}`, "#fbbf24");
       }
       return true;
 
@@ -458,8 +493,10 @@ function handleCommand(text) {
             <code style="color: #fbbf24;text-align: left;">/poll P, O1, O2</code>  <span>Anketa</span>
             <code style="color: #fbbf24;text-align: left;">/roll 100</code>         <span>Kockica</span>
             <code style="color: #fbbf24;text-align: left;">/clear</code>            <span>Očisti čet</span>
+            <code style="color: #fbbf24;text-align: left;">/space Naziv</code>       <span>Promeni prostor</span>
             <code style="color: #fbbf24;text-align: left;">/ping</code>             <span>Ping test Agora</span>
             <code style="color: #fbbf24;text-align: left;">/msg {ime} {poruka}</code> <span>Pošalji privatnu poruku</span>
+            ${isDesktop ? `<code style="color: #fbbf24;text-align: left;">/crtkica</code> <span>Otvori/zatvori crtkicu</span>` : ""}
             <code style="color: #fbbf24;text-align: left;">/bot {pitanje}</code>    <span>Postavi pitanje botu</span>
           </div>
         </div>`;
@@ -504,9 +541,31 @@ function startChat() {
       }
       return;
     }
-
+    if (data.username !== "Sistem") {
+      firebase.database()
+        .ref(`whiteboard-game/${window.CHANNEL}`)
+        .once("value", (snap) => {
+          const game = snap.val();
+          if (!game || !game.active) return;
+          if ((data.username || "") === game.drawer) return;
+          // game word guessed correctly — end the game and announce the winner
+          if ((data.text || "").toLowerCase().trim() === game.word.toLowerCase()) {
+            firebase.database()
+              .ref(`whiteboard-game/${window.CHANNEL}`)
+              .remove();
+            clearInterval(window.timerInterval);
+            window.chatRef.push({
+              username:  "Sistem",
+              text:      `🎉 ${data.username} pogodio reč: ${game.word}!`,
+              color:     "#fbbf24",
+              timestamp: Date.now(),
+            });
+            if (window.launchWhiteboardConfetti) window.launchWhiteboardConfetti();
+          }
+        });
+    }
     // Standard messages and polls
-    window.appendMessage(data.username, data.text, data.color || "#4ade80", key, data);
+    window.appendMessage(data.username, data.text, data.color || "#805ff5", key, data);
   });
 
   // Listen for updates to existing messages (used for live poll vote counts)
@@ -519,6 +578,38 @@ function startChat() {
       });
     }
   });
+
+  // Presence listener — updates muted state on remote avatars
+  firebase.database()
+    .ref(`presence/${window.CHANNEL}`)
+    .on("child_changed", (snapshot) => {
+      const data = snapshot.val();
+      const uid  = snapshot.key;
+      if (!data) return;
+      const avatar = document.getElementById(`avatar-${uid}`);
+      if (avatar) avatar.classList.toggle("muted", data.muted === true);
+    });
+}
+
+// Presence listener — adds/removes users from the grid as they join/leave
+function startPresenceListener() {
+  firebase.database()
+    .ref(`presence/${window.CHANNEL}`)
+    .on("child_added", (snap) => {
+      const data = snap.val();
+      const uid  = snap.key;
+      if (!data?.displayName) return;
+      window.uidNameMap[uid] = data.displayName;
+      const isMe = uid === String(window.myAgoraUID);
+      window.drawUser(uid, data.displayName, data.icon, isMe);
+    });
+
+  firebase.database()
+    .ref(`presence/${window.CHANNEL}`)
+    .on("child_removed", (snap) => {
+      const el = document.getElementById(`user-${snap.key}`);
+      if (el) el.remove();
+    });
 }
 
 // ============================================================
@@ -579,7 +670,7 @@ async function uploadFile(file, expiry) {
 /** Uploads a file and posts the resulting URL as a chat message */
 window.handleFileUpload = async (file) => {
   if (window.appendMessage)
-    window.appendMessage("Sistem", `Slanje fajla: ${file.name}...`, "#60a5fa");
+    window.appendMessage("Sistem", `Slanje fajla: ${file.name}...`, "#fbbf24");
 
   const expirySelect = document.getElementById("upload-expiry");
   const expiry  = expirySelect ? expirySelect.value : "trajno";
@@ -590,13 +681,12 @@ window.handleFileUpload = async (file) => {
     window.chatRef.push({
       username:  window.myDisplayName,
       text:      `Dostupno ${expiry}: ${fileUrl}`,
-      color:     window.myColor || "#ffffff",
       timestamp: Date.now(),
     });
   } else {
     const errorDetail = fileUrl || "Problem sa serverom";
     if (window.appendMessage)
-      window.appendMessage("Sistem", `Greška pri slanju: ${errorDetail}`, "#f87171");
+      window.appendMessage("Sistem", `Greška pri slanju: ${errorDetail}`, "#ef4444");
   }
 }
 
@@ -879,10 +969,10 @@ window.appendSystemHTML = (htmlContent, atTop = false) => {
   msgDiv.style.width     = "90%";
 
   if (atTop) {
-    msgDiv.innerHTML = `<b style="color: #60a5fa">Dobrodošli</b><br>${htmlContent}`;
+    msgDiv.innerHTML = `<b style="color: #805ff5">Dobrodošli</b><br>${htmlContent}`;
     chatMessages.prepend(msgDiv);
   } else {
-    msgDiv.innerHTML = `<b style="color: #60a5fa">Komande:</b><br>${htmlContent}`;
+    msgDiv.innerHTML = `<b style="color: #805ff5">Komande:</b><br>${htmlContent}`;
     chatMessages.appendChild(msgDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
   }
