@@ -33,7 +33,7 @@ let screenAudioTrack = null;
 // Result is also cached in uidNameMap for getDisplayName().
 // ============================================================
 async function resolveRemoteName(uid) {
-  const MAX_ATTEMPTS = 5;
+  const MAX_ATTEMPTS = 3;
   const BASE_DELAY   = 200;
 
   for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {

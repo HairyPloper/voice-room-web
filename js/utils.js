@@ -62,9 +62,19 @@ window.requestWakeLock = async () => {
 // Used in rtc.js to play join (660 Hz) and leave (440 Hz) sounds.
 // Uses an exponential gain ramp for a natural fade-out instead of a hard cut.
 // ============================================================
+window._sharedAudioCtx = null;
+
 window._playTone = (freq, duration = 0.5) => {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    // Lazily create the shared context on first use (must be after a user gesture)
+    if (!window._sharedAudioCtx) {
+      window._sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    const ctx = window._sharedAudioCtx;
+
+    // Resume in case the context was suspended (browser autoplay policy)
+    if (ctx.state === "suspended") ctx.resume();
+
     const o   = ctx.createOscillator();
     const g   = ctx.createGain();
 
