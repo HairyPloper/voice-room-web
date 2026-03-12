@@ -1,121 +1,143 @@
 # Linkice
 
-A modern web-based voice chat application built with Agora WebRTC, Firebase, and vanilla JavaScript. Features real-time audio communication, chat messaging, AI integration, polls, and more.
+A real-time voice chat room built with **Agora WebRTC**, **Firebase**, and vanilla JavaScript. No accounts, no installs — open a link and talk.
 
-## Features
+---
 
-- **Real-time Voice Chat**: High-quality audio communication using Agora WebRTC
-- **Live Chat**: Firebase-powered messaging with emoji support, file uploads, and media links
-- **AI Integration**: Built-in AI chat using Gemini API for intelligent responses
-- **Interactive Polls**: Create and vote on polls in real-time
-- **Screen Sharing**: Share your screen with other participants
-- **Mobile Responsive**: Optimized for both desktop and mobile devices
-- **Customizable Avatars**: Personalize your presence with custom icons
-- **Volume Controls**: Individual volume adjustment for each participant
-- **Drag-and-Drop Chat**: Movable chat interface on desktop
-- **Auto-Collapse**: Chat minimizes on join to show avatars
+## What it does
 
-## Technologies Used
+- 🎙️ **Voice calls** — join/leave a persistent room with mic mute, per-user volume sliders, and speaking indicators
+- 💬 **Persistent chat** — messages stored in Firebase, last 50 loaded on join. Supports images, video, audio, YouTube, Spotify, and file embeds automatically from URLs
+- 🖥️ **Screen sharing** — 1080p/30fps with optional system audio capture
+- 🎨 **Shared whiteboard** — real-time collaborative canvas with drawing tools and eraser, synced via Firebase
+- 🎮 **Word guessing game** — drawer picks a word, others guess via chat. 60-second timer, confetti on correct guess
+- 📊 **Polls** — create live multi-option polls with atomic vote counting
+- 🤖 **AI bot** — `/bot` command hits Gemini API via proxy, falls back through multiple models if rate-limited
+- 📱 **Mobile-friendly** — chat auto-collapses on join, touch-optimised controls, wake lock prevents screen sleep during calls
 
-- **Frontend**: HTML5, CSS3, JavaScript (ES6+)
-- **WebRTC**: Agora SDK for real-time communication
-- **Backend**: Firebase Realtime Database for chat persistence
-- **AI**: Google Gemini API for AI responses
-- **File Upload**: Catbox.moe for image/file sharing
-- **Icons**: Custom emoji and icon system
+---
 
-## Setup Instructions
+## Chat commands
+
+| Command | Description |
+|---|---|
+| `/bot <question>` | Ask the AI a question (visible to everyone) |
+| `/poll Question , Option1 , Option2` | Create a live poll |
+| `/nick <name>` | Change your display name |
+| `/roll <max>` | Roll a random number (default 1–100) |
+| `/msg <user> <message>` | Send a private message |
+| `/ping` | Show Agora network stats (RTT + user count) |
+| `/crtkica` | Open / close the whiteboard (desktop only) |
+| `/clear` | Clear your local chat view |
+| `/help` | Show command reference card |
+
+---
+
+## URL parameters
+
+```
+?name=HairyPloper       sets your display name for the session
+```
+
+Name is saved to `localStorage` so it persists on reload. If no name is set, a random `Gost_XXXX` is assigned.
+
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Voice / video | Agora WebRTC SDK (RTC mode, VP8) |
+| Realtime data | Firebase Realtime Database |
+| Auth | Firebase Anonymous Auth |
+| AI | Google Gemini API (via Vercel proxy) |
+| File hosting | Catbox.moe / Litterbox (temporary) |
+| Frontend | Vanilla JS (ES6+), HTML5 Canvas, Web Audio API |
+
+No build step. No framework. No bundler.
+
+---
+
+## Project structure
+
+```
+voice_room_web/
+├── index.html        # Entry point — Firebase config lives here
+├── css/
+│   └── style.css
+├── js/
+│   ├── main.js       # App init, globals, audio settings, speaker selection
+│   ├── rtc.js        # Agora: join/leave, mic, screen share, reconnection
+│   ├── chat.js       # Firebase chat, slash commands, polls, AI bot, file upload
+│   ├── ui.js         # User cards, video overlays, background video/music
+│   ├── utils.js      # Shared helpers: escapeHtml, playTone, wakeLock, sanitizer
+│   └── whiteboard.js # Canvas drawing, Firebase stroke sync, word game
+└── src/              # Static assets (audio, etc.)
+```
+
+---
+
+## Setup
 
 ### Prerequisites
-- Node.js (optional, for local development)
-- Firebase project with Realtime Database enabled
-- Agora account with App ID
-- Gemini API key (for AI features)
 
-### Installation
+- Firebase project with **Realtime Database** and **Anonymous Auth** enabled
+- Agora account with an **App ID**
+- Gemini API key + a proxy to forward requests (the default proxy is a Vercel function)
 
-1. Clone the repository:
+### Steps
+
+1. **Clone**
    ```bash
    git clone <repository-url>
    cd voice_room_web
    ```
 
-2. Configure Firebase:
-   - Create a Firebase project at https://console.firebase.google.com/
-   - Enable Realtime Database
-   - Copy your Firebase config to `index.html`
+2. **Firebase** — paste your config object into `index.html`:
+   ```js
+   const firebaseConfig = {
+     apiKey: "...",
+     authDomain: "...",
+     databaseURL: "...",
+     projectId: "...",
+   };
+   ```
 
-3. Configure Agora:
-   - Sign up at https://www.agora.io/
-   - Get your App ID and update `js/main.js`
+3. **Agora** — set your App ID in `js/main.js`:
+   ```js
+   window.APP_ID = "your-agora-app-id";
+   ```
+   > ⚠️ For production, replace the `null` token in `client.join()` with server-generated short-lived tokens to prevent unauthorised channel access.
 
-4. Configure AI (optional):
-   - Get a Gemini API key
-   - Update the proxy URL in `js/chat.js`
+4. **AI proxy** — update the fetch URL in `js/chat.js` `askAI()` to point at your own Gemini proxy:
+   ```js
+   fetch("https://your-proxy.vercel.app/api/gemini", ...)
+   ```
 
-5. Open `index.html` in your browser or serve locally
+5. **Open** `index.html` directly in a browser or serve with any static server:
+   ```bash
+   npx serve .
+   ```
 
-### Usage
+## Audio settings
 
-1. Enter your name (optional) in the URL: `?name=YourName`
-2. Click "Upadni" (Join) to enter the voice room
-3. Use the chat commands:
-   - `/ai <question>` - Ask AI a question
-   - `/poll <question> , <option1> , <option2>` - Create a poll
-   - `/nick <name>` - Change your nickname
-   - `/roll <number>` - Roll a dice
-   - `/msg <user> <message>` - Send private message
-   - `/help` - Show all commands
+AEC (echo cancellation), AGC (gain control), and ANS (noise suppression) can be toggled per-session from the settings menu. Choices are saved to `localStorage`. Speaker output device can also be selected after joining (desktop only).
 
-### Mobile Features
+---
 
-- Chat collapses to header on join to prioritize avatars
-- Touch-friendly interface
-- Optimized for mobile browsers
-- Bottom-positioned controls
+## Browser support
 
-## Project Structure
+| Browser | Voice | Screen share | Whiteboard |
+|---|---|---|---|
+| Chrome 80+ | ✅ | ✅ | ✅ |
+| Edge 80+ | ✅ | ✅ | ✅ |
+| Firefox 75+ | ✅ | ✅ | ✅ |
+| Safari 13+ | ✅ | ⚠️ Limited | ✅ |
+| iOS Safari | ✅ | ❌ | ❌ |
+| Chrome Mobile | ✅ | ❌ | ❌ |
 
-```
-voice_room_web/
-├── index.html          # Main HTML file
-├── css/
-│   └── style.css       # Stylesheets
-├── js/
-│   ├── main.js         # Initialization and globals
-│   ├── rtc.js          # Agora WebRTC logic
-│   ├── chat.js         # Chat and UI logic
-│   ├── ui.js           # User interface utilities
-│   └── utils.js        # Helper functions
-├── src/                # Assets (audio files, etc.)
-└── README.md           # This file
-```
-
-## Browser Support
-
-- Chrome 80+
-- Firefox 75+
-- Safari 13+
-- Edge 80+
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Test thoroughly
-5. Submit a pull request
+---
 
 ## License
 
-This project is open source. Feel free to use and modify as needed.
-
-## Acknowledgments
-
-- Agora.io for WebRTC infrastructure
-- Firebase for real-time database
-- Google for Gemini AI API
-- Icons from various open sources
-
-
+Open source. Use and modify freely.
