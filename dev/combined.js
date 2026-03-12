@@ -288,11 +288,8 @@ if (bgVideo && bgVideo.paused) {
 
   const playOnInteraction = () => {
     bgVideo.play()
-      .then(() => {
-        console.log("Video started successfully!");
-      })
       .catch((err) => {
-        console.warn("Play failed:", err);
+        console.warn("bg video play failed:", err);
       });
   };
 
@@ -654,6 +651,35 @@ window.client.on("volume-indicator", (volumes) => {
   });
 });
 
+//** Fired when the connection state changes (e.g. due to network issues).
+// Updates the header status text and color to reflect reconnecting/disconnected states,
+// and posts system messages on disconnect/reconnect events.
+// Note: Agora automatically tries to reconnect, so we don't need to do anything here
+// except update the UI to keep the user informed. */
+window.client.on("connection-state-change", (curState, prevState) => {
+  const s = document.getElementById("status");
+  if (!s) return;
+
+  if (curState === "RECONNECTING") {
+    s.innerText   = "⏳ Ponovno povezivanje...";
+    s.style.color = "#fbbf24";
+  }
+
+  if (curState === "DISCONNECTED" && prevState === "RECONNECTING") {
+    s.innerText   = "Veza prekinuta";
+    s.style.color = "#f87171";
+    if (window.appendMessage)
+      window.appendMessage("Sistem", "Veza je prekinuta.", "#f87171");
+  }
+
+  if (curState === "CONNECTED" && prevState === "RECONNECTING") {
+    s.innerText   = isMuted ? "Mutiran 🤐" : "Povezan • Live";
+    s.style.color = isMuted ? "#f87171"    : "#4ade80";
+    if (window.appendMessage)
+      window.appendMessage("Sistem", "Veza je obnovljena. ✅", "#4ade80");
+  }
+});
+
 // ============================================================
 // JOIN
 // Acquires mic, publishes audio, and updates the UI to "connected" state
@@ -900,7 +926,6 @@ let selectedIndex = 0;
 // ============================================================
 firebase.auth().onAuthStateChanged((user) => {
   if (user) {
-    console.log("Authenticated! Starting chat...");
     startChat();
     startPresenceListener();
     // Safety net: remove the skeleton loader after 5 s if no messages arrive
@@ -1876,8 +1901,31 @@ function initWhiteboard() {
   let myWord = null;
 
   // Firebase refs
-  const wbRef   = firebase.database().ref(`whiteboard/${window.CHANNEL}`);
-  const gameRef = firebase.database().ref(`whiteboard-game/${window.CHANNEL}`);
+  const wbRef    = firebase.database().ref(`whiteboard/${window.CHANNEL}`);
+  const wbClrRef = firebase.database().ref(`whiteboard-cleared/${window.CHANNEL}`);
+  const gameRef  = firebase.database().ref(`whiteboard-game/${window.CHANNEL}`);
+
+  // ============================================================
+  // STROKE BUFFER — THROTTLED FIREBASE WRITES
+  // FLUSH_INTERVAL ms (~30 fps).
+  // ============================================================
+  const FLUSH_INTERVAL = 30; // ms
+  let   strokeBuffer   = [];
+  let   flushTimer     = null;
+
+  function scheduleFlush() {
+    if (flushTimer) return;
+    flushTimer = setTimeout(() => {
+      flushTimer = null;
+      if (!strokeBuffer.length) return;
+      const batch = {};
+      strokeBuffer.forEach(stroke => {
+        batch[wbRef.push().key] = stroke;
+      });
+      strokeBuffer = [];
+      wbRef.update(batch);
+    }, FLUSH_INTERVAL);
+  }
 
   // ============================================================
   // WORD LIST
@@ -1931,8 +1979,10 @@ function initWhiteboard() {
     eraserBtn.classList.toggle("active", isEraser);
   };
 
-  clearBtn.onclick = () => {
-    wbRef.remove();
+  clearBtn.onclick = async () => {
+    await wbClrRef.set({ clearedAt: Date.now(), by: window.myDisplayName });
+    await wbRef.remove();
+    setTimeout(() => wbClrRef.remove(), 2000);
     ctx.clearRect(0, 0, canvas.width, canvas.height);
   };
 
@@ -2080,7 +2130,7 @@ function initWhiteboard() {
 
     drawLine(lastX, lastY, x, y, isEraser ? "#000000" : currentColor, currentSize, isEraser);
 
-    wbRef.push({
+    strokeBuffer.push({
       x1:     lastX / canvas.width,
       y1:     lastY / canvas.height,
       x2:     x     / canvas.width,
@@ -2089,6 +2139,7 @@ function initWhiteboard() {
       size:   currentSize,
       eraser: isEraser,
     });
+    scheduleFlush();
 
     lastX = x;
     lastY = y;
@@ -2130,9 +2181,11 @@ function initWhiteboard() {
     );
   });
 
-  // Clear canvas when someone clicks clear
-  wbRef.on("value", (snap) => {
-    if (!snap.exists()) {
+  // ============================================================
+  // FIREBASE — CLEAR SIGNAL LISTENER
+  // ============================================================
+  wbClrRef.on("value", (snap) => {
+    if (snap.exists()) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
   });
