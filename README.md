@@ -28,6 +28,7 @@ A real-time voice chat room built with **Agora WebRTC**, **Firebase**, and vanil
 | `/roll <max>` | Roll a random number (default 1–100) |
 | `/msg <user> <message>` | Send a private message |
 | `/ping` | Show Agora network stats (RTT + user count) |
+| `/space` | Change space |
 | `/crtkica` | Open / close the whiteboard (desktop only) |
 | `/clear` | Clear your local chat view |
 | `/help` | Show command reference card |

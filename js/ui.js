@@ -34,6 +34,27 @@ if (videoToggle && bgVideo) {
 }
 
 // ============================================================
+// BACKGROUND VIDEO AUTOPLAY WARP SPEED
+// Start the video at a high playback rate and slow down to normal speed.
+if (bgVideo) {
+  bgVideo.playbackRate = 4.0;
+  bgVideo.play();
+
+  const slowDown = setInterval(() => {
+    const current = bgVideo.playbackRate;
+
+    if (current <= 1.0) {
+      bgVideo.playbackRate = 1.0;
+      clearInterval(slowDown);
+      return;
+    }
+
+    bgVideo.playbackRate = Math.max(1.0, current * 0.9);
+
+  }, 100);
+}
+
+// ============================================================
 // MOBILE AUTOPLAY FIX
 // Covers Chrome, Firefox, Safari, Edge, Brave on mobile
 // ============================================================
