@@ -15,11 +15,6 @@
       rel="stylesheet"
     />
 
-    <!-- Inline SVG favicon (loop emoji) -->
-    <!-- <link
-      rel="icon"
-      href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>➰</text></svg>"
-    /> -->
     <link rel="icon" type="image/png" href="favicon-v1.png">
 
     <!-- Agora RTC SDK for real-time audio/video communication -->
@@ -33,15 +28,14 @@
 
     <!-- ============================================================
          VIDEO BACKGROUND
-         Looping ambient video with a dark overlay for contrast
+         ambient video with a dark overlay for contrast
+         src="https://us-west-2-epicgames.graphassets.com/cmkr1i7c9047e07n0es5291ez/cmis28lk91sq907mv9aydajlk"
          ============================================================ -->
     <div class="video-background">
       <div class="video-overlay"></div>
-      <video loop muted playsinline preload="auto" id="bgVideo">
-        <source
-          src="https://us-west-2-epicgames.graphassets.com/cmkr1i7c9047e07n0es5291ez/cmis28lk91sq907mv9aydajlk"
-          type="video/mp4"
-        />
+      <video loop muted playsinline preload="auto" autoplay id="bgVideo">
+        <source src="src/nebula_bounce.webm" type="video/webm" />
+        <source src="src/nebula_bounce.mp4"  type="video/mp4" />
       </video>
     </div>
 
@@ -49,7 +43,7 @@
     <audio loop id="myAudio">
       <source src="src/nemoj.mp3" type="audio/mpeg" />
     </audio>
-
+    
     <!-- ============================================================
          HEADER
          App title and live connection status message
@@ -99,18 +93,7 @@
     <div id="chat-container">
 
       <!-- Chat header: toggle buttons, settings, drag handle -->
-      <div
-        id="chat-header"
-        style="
-          display: flex;
-          justify-content: flex-end;
-          align-items: center;
-          padding: 10px;
-          background: var(--glass-bg);
-          border: 1px solid var(--glass-border);
-          border-radius: 12px 12px 0 0;
-        "
-      >
+      <div id="chat-header">
         <span id="unread-badge" class="hidden">0</span>
         <!-- Toggle background music on/off -->
         <button
@@ -129,16 +112,6 @@
           title="Uključi/Isključi video"
         >
           🎬
-        </button>
-
-        <!-- Toggle snow/particle effect (mobile only, hidden via CSS on desktop) -->
-        <button
-          id="snowToggle"
-          class="video-toggle snow-toggle"
-          title="Uključi/Isključi pahuljicu"
-          style="top: 8px; right: 50px"
-        >
-          ❄️
         </button>
 
         <!-- Settings dropdown (file upload expiry) -->
@@ -189,7 +162,7 @@
         <!-- Drag handle — lets users reposition the chat panel -->
         <div
           id="chat-drag-handle"
-          style="cursor: grab; padding: 5px; color: #4ade80; display: flex"
+          style="cursor: grab; padding: 5px; color: #805ff5; display: flex"
         >
           <!-- Six-dot grid icon (SVG) -->
           <svg
@@ -273,6 +246,47 @@
         <button id="send-btn">💬</button>
       </div>
     </div>
+    <!-- ============================================================
+         WHITEBOARD
+         Draggable canvas with basic drawing tools, toggled via /crtkica command
+         ============================================================ -->
+    <div id="whiteboard-container" class="hidden">
+      <div id="whiteboard-header">
+        <!-- Drag handle — lets users reposition the chat panel -->
+        <div id="whiteboard-drag-handle">
+          <!-- Six-dot grid icon (SVG) -->
+          <svg
+            width="20"
+            viewBox="0 0 24 24"
+            height="20"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <circle cx="9" cy="5" r="1"></circle>
+            <circle cx="9" cy="12" r="1"></circle>
+            <circle cx="9" cy="19" r="1"></circle>
+            <circle cx="15" cy="5" r="1"></circle>
+            <circle cx="15" cy="12" r="1"></circle>
+            <circle cx="15" cy="19" r="1"></circle>
+          </svg>
+        </div>
+        <button id="whiteboard-close">✕</button>
+      </div>
+      <div id="whiteboard-toolbar">
+        <input type="color" id="wb-color" value="#ffffff" title="Boja">
+        <input type="range" id="wb-size" min="1" max="20" value="3" title="Veličina">
+        <button id="wb-eraser" class="wb-btn">⬜ Gumica</button>
+        <button id="wb-clear" class="wb-btn">🗑️ Obriši sve</button>
+        <button id="wb-word" class="wb-btn">🎮 Stižem</button>
+        <button id="wb-stop" class="wb-btn" style="display:none;">⏹ Završi igru</button>
+        <span id="wb-current-word" style="color:#fbbf24; font-size:0.85rem; margin-left:5px;"></span>
+      </div>
+        <canvas id="whiteboard-canvas"></canvas>
+        </div>
+    </div>
 
     <!-- ============================================================
          FIREBASE SDKs
@@ -285,28 +299,30 @@
     <script>
       // Firebase project config + app init
       const firebaseConfig = {
-        apiKey: "AIzaSyAGtDjLnt2t_fMsIZJkGcH-Az-JhoXePD0",
-        databaseURL:
-          "https://voice-room-web-default-rtdb.europe-west1.firebasedatabase.app",
+         apiKey: "AIzaSyAWPaFmiGEEeG2XfgQUCQLMa5nt7eaZ3Kk",
+         databaseURL: "https://voice-room-web1-default-rtdb.europe-west1.firebasedatabase.app",
       };
       firebase.initializeApp(firebaseConfig);
 
       // Global channel name used by Agora and Firebase
-      window.CHANNEL = "Linkice";
+      const spaceParam = new URLSearchParams(window.location.search).get("space");
+      window.CHANNEL = spaceParam
+        ? spaceParam.replace(/[^a-zA-Z0-9_-]/g, "").slice(0, 64) || "Linkice"
+        : "Linkice";
+      const isDesktop = !/iPhone|iPad|Android/i.test(navigator.userAgent);
 
       // Slash-command definitions consumed by the autocomplete menu
       window.commands = [
+        { cmd: "/nick",  desc: "Promena imena /nick {ime}" },
+        { cmd: "/poll",  desc: "Anketa /poll {pitanje}, {opcija 1}, {opcija 2} ..." },
+        { cmd: "/roll",  desc: "Kockica /roll {num}" },
         { cmd: "/clear", desc: "Očisti čet" },
-        { cmd: "/nick",  desc: "Promeni ime /nick {ime}" },
-        { cmd: "/roll",  desc: "Baci kockicu /roll {num}" },
+        { cmd: "/help",  desc: "Pomoć" },
         { cmd: "/ping",  desc: "Ping test Agora" },
         { cmd: "/msg",   desc: "Privatna poruka /msg {ime} {poruka}" },
-        {
-          cmd: "/poll",
-          desc: "Kreiraj anketu /poll {pitanje}, {opcija 1}, {opcija 2} ...",
-        },
+        { cmd: "/space", desc: "Promeni prostor /space {naziv}" },
         { cmd: "/bot",   desc: "Postavi pitanje botu /bot {pitanje}" },
-        { cmd: "/help",  desc: "Pomoć" },
+        ...(isDesktop ? [{ cmd: "/crtkica", desc: "Otvori/zatvori crtkicu" }] : []),
       ];
     </script>
 
@@ -315,6 +331,5 @@
          Load order matters: main → utils → ui → rtc → chat
          ============================================================ -->
     <script src="js/bundle.min.js"></script>
-
   </body>
 </html>
