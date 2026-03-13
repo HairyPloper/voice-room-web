@@ -213,7 +213,7 @@ window.playVideoInCard = (uid, track) => {
 // ============================================================
 window.removeVideoFromCard = (uid) => {
   document.getElementById(`video-wrapper-${uid}`)?.remove();
-
+  
   const avatar = document.querySelector(`#user-${uid} .avatar`);
   if (avatar) avatar.style.display = "flex";
 };
