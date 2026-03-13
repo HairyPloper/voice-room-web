@@ -457,7 +457,7 @@ window.playVideoInCard = (uid, track) => {
 // ============================================================
 window.removeVideoFromCard = (uid) => {
   document.getElementById(`video-wrapper-${uid}`)?.remove();
-
+  
   const avatar = document.querySelector(`#user-${uid} .avatar`);
   if (avatar) avatar.style.display = "flex";
 };
@@ -623,6 +623,15 @@ window.client.on("user-published", async (user, mediaType) => {
 
   if (mediaType === "video") {
     window.playVideoInCard(user.uid, user.videoTrack);
+  }
+});
+
+/** Fired when a remote user unpublishes an audio or video track.
+ *  We remove video share screen wrapper after user stops sharing
+ */
+window.client.on("user-unpublished", (user, mediaType) => {
+  if (mediaType === "video") {
+    window.removeVideoFromCard(user.uid);
   }
 });
 
